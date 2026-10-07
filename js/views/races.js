@@ -172,7 +172,8 @@ function renderStats(now) {
     .filter(r => !isUpcoming(r, now) && yearOf(r) === viewYear)
     .reverse();
   $('#raceHistoryYear').textContent = String(viewYear);
-  $('#raceHistoryList').innerHTML = pastYear.length ? pastYear.map(r => raceCard(r, now)).join('') : '<div class="empty-state"><p>Aucune course passée pour cette année.</p></div>';
+  $('#raceHistoryList').innerHTML = pastYear.map(r => raceCard(r, now)).join('');
+  $('#raceHistoryList').closest('.section').hidden = !pastYear.length;
 }
 
 export function renderRaces() {
@@ -187,7 +188,7 @@ export function renderRaces() {
   const [next, ...later] = upcoming;
   renderHero(next);
   const shown = showAllUpcoming ? later : later.slice(0, UPCOMING_PREVIEW);
-  $('#raceUpcomingList').innerHTML = later.length ? shown.map(r => raceCard(r, now)).join('') : `<div class="empty-state"><p>${next ? 'Aucune autre course à venir.' : 'Aucune course à venir.'}</p></div>`;
+  $('#raceUpcomingList').innerHTML = shown.map(r => raceCard(r, now)).join('');
   const more = $('#raceMore');
   more.hidden = later.length <= UPCOMING_PREVIEW;
   more.setAttribute('aria-expanded', String(showAllUpcoming));
