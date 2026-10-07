@@ -14,8 +14,8 @@ Les autres données (agenda, tâches, planning de la semaine…) appartiennent �
 Garde-fou : un appareil qui n'a encore jamais reçu les données du cloud ne peut rien enregistrer (sinon une liste vide écraserait les données de Carnet). Après la première synchronisation, l'app fonctionne aussi hors ligne.
 
 ## Apparence
-Style minimaliste (anthracite, cartes pleines, un accent en dégradé). Bouton ⚙︎ : 4 palettes (Aurore, Lagon, Braise, Menthe) et thème sombre / clair, mémorisés sur l'appareil.
-Icône : propositions dans `logos/` (`planche.png`) ; `icon.svg` = icône retenue.
+Style minimaliste (anthracite, cartes pleines), couleurs **Aurore** (dégradé violet → rose → orange). Bouton ⚙︎ : thème sombre / clair, mémorisé sur l'appareil.
+Icône **Sommet** (`icon.svg`, déclinée en PNG).
 
 ## Structure
 ```

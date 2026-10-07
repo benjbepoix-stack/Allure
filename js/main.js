@@ -5,7 +5,7 @@ import { state, loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, 
 import { initCloud, pushCloud, flushNow, isCloudAvailable } from './services/firebase.js';
 import { readText, write } from './services/storage.js';
 import { initDialogs, openSheet } from './ui/dialog.js';
-import { applyTheme, applyPalette, PALETTES } from './ui/theme.js';
+import { applyTheme } from './ui/theme.js';
 import { renderStatus } from './ui/status.js';
 import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
@@ -48,37 +48,23 @@ function onStateChange(slices) {
 
 /* ---------- Apparence (propre à l'appareil) ---------- */
 const theme = () => (readText('allure_theme', 'dark') === 'light' ? 'light' : 'dark');
-const palette = () => (PALETTES[readText('allure_palette', '')] ? readText('allure_palette', '') : 'aurore');
 
 function renderStyleSheet() {
-  $('#paletteGrid').innerHTML = Object.entries(PALETTES)
-    .map(
-      ([id, p]) => `<button type="button" class="palette ${id === palette() ? 'is-active' : ''}" data-palette-pick="${id}" aria-pressed="${id === palette()}">
-        <span class="palette__swatch" style="background:${p.gradient}"></span><span class="palette__name">${p.name}</span><span class="palette__hint">${p.hint}</span></button>`
-    )
-    .join('');
   $$('[data-theme-pick]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.themePick === theme())));
 }
 
 function initAppearance() {
   applyTheme(theme());
-  applyPalette(palette());
   $('#settingsBtn').addEventListener('click', () => {
     renderStyleSheet();
     openSheet('styleSheet', { focus: false });
   });
   $('#styleSheet').addEventListener('click', e => {
-    const p = e.target.closest('[data-palette-pick]')?.dataset.palettePick;
     const t = e.target.closest('[data-theme-pick]')?.dataset.themePick;
-    if (p) {
-      write('allure_palette', p);
-      applyPalette(p);
-    }
-    if (t) {
-      write('allure_theme', t);
-      applyTheme(t, { animate: true });
-    }
-    if (p || t) renderStyleSheet();
+    if (!t) return;
+    write('allure_theme', t);
+    applyTheme(t, { animate: true });
+    renderStyleSheet();
   });
 }
 

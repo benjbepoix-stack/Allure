@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark" data-palette="aurore">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -18,11 +18,10 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
-  <!-- Thème et palette appliqués avant le premier rendu (évite un flash). -->
+  <!-- Thème appliqué avant le premier rendu (évite un flash). -->
   <script>
     try {
       if (localStorage.getItem('allure_theme') === 'light') document.documentElement.dataset.theme = 'light';
-      var p = localStorage.getItem('allure_palette'); if (p) document.documentElement.dataset.palette = p;
     } catch (e) {}
   </script>
 
@@ -242,14 +241,12 @@
     <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle" tabindex="-1" id="calendarContent"></div>
   </div>
 
-  <!-- Apparence : palette et thème -->
+  <!-- Apparence : thème -->
   <div class="sheet-backdrop" id="styleSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="styleTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="styleTitle">Apparence</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <div class="sheet__scroll">
-        <p class="field__label">Couleurs</p>
-        <div class="palette-grid" id="paletteGrid"></div>
         <p class="field__label">Thème</p>
         <div class="segmented" role="radiogroup" id="themeSwitch">
           <button type="button" role="radio" data-theme-pick="dark">Sombre</button>
