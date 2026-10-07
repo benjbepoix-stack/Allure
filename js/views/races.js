@@ -41,7 +41,11 @@ export function fromWheel(value) {
   return `${h}h${pad2(m)}`;
 }
 /** Valeur à enregistrer : la roulette, sinon l'ancienne valeur si elle n'était pas convertible (ex. « 26h »). */
-const durationValue = input => fromWheel(input.value) || (!input.value && input.dataset.orig && !toWheel(input.dataset.orig) ? input.dataset.orig : '');
+const durationValue = input =>
+  fromWheel(input.value) || ((!input.value || input.value === '00:00') && input.dataset.orig && !toWheel(input.dataset.orig) ? input.dataset.orig : '');
+/** La roulette part toujours de 00:00 ; 00:00 = non renseigné (affiché en grisé). */
+const wheelValue = v => toWheel(v) || '00:00';
+const zeroClass = v => (toWheel(v) ? '' : ' is-zero');
 
 /** Chiffres clés d'une course : seuls ceux qui sont renseignés sont affichés. */
 function statsHTML(r, cls) {
@@ -119,7 +123,7 @@ function raceCard(r, now) {
     ${
       past
         ? `<div class="race-result"><div class="race-result__title">Résultat</div><div class="race-result__grid">
-        <label class="mini-field"><span>Temps réalisé</span><input class="input input--center input--wheel" type="time" data-result="resultTime" data-orig="${esc(r.resultTime)}" value="${toWheel(r.resultTime)}"></label>
+        <label class="mini-field"><span>Temps réalisé</span><input class="input input--center input--wheel${zeroClass(r.resultTime)}" type="time" data-result="resultTime" data-orig="${esc(r.resultTime)}" value="${wheelValue(r.resultTime)}"></label>
         <label class="mini-field"><span>Classement</span><input class="input input--center" data-result="resultRank" maxlength="40" inputmode="numeric" value="${esc(r.resultRank)}"></label>
         <label class="mini-field"><span>Distance (km)</span><input class="input input--center" data-result="resultDistance" maxlength="40" inputmode="decimal" value="${esc(r.resultDistance)}"></label>
       </div></div>`
@@ -217,7 +221,8 @@ function openEditor(id = null) {
   form.elements.editId.value = r?.id || '';
   $('#raceSheetTitle').textContent = r ? 'Modifier la course' : 'Nouvelle course';
   if (r) ['name', 'sport', 'date', 'time', 'location', 'distance', 'elevation', 'price', 'notes'].forEach(k => (form.elements[k].value = r[k] ?? ''));
-  form.elements.target.value = toWheel(r?.target);
+  form.elements.target.value = wheelValue(r?.target);
+  form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';
   openSheet('raceSheet');
 }
@@ -312,21 +317,16 @@ function onResultChange(e) {
   toast('Résultat enregistré');
 }
 
-/* Roulette : vide à l'affichage, positionnée sur 00:00 à l'ouverture. */
-function wheelDefault(e) {
+/* Roulette : grisée tant qu'elle est sur 00:00. */
+function wheelState(e) {
   const input = e.target;
-  if (input.matches?.('.input--wheel') && !input.value) input.value = '00:00';
-}
-function wheelClear(e) {
-  const input = e.target;
-  if (input.matches?.('.input--wheel') && input.value === '00:00') input.value = '';
+  if (input.matches?.('.input--wheel')) input.classList.toggle('is-zero', !input.value || input.value === '00:00');
 }
 
 export function initRaces() {
   const view = $('#raceView');
   [view, $('#raceForm')].forEach(el => {
-    el.addEventListener('focusin', wheelDefault);
-    el.addEventListener('focusout', wheelClear);
+    el.addEventListener('input', wheelState);
   });
   view.addEventListener('click', onClick);
   view.addEventListener('change', onResultChange);

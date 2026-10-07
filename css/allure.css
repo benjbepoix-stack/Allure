@@ -78,3 +78,4 @@ body { background: var(--bg); }
 .race-result input[type="time"]::-webkit-date-and-time-value { text-align: center; margin: 0; line-height: 46px; min-height: 46px; }
 .race-result input[type="time"]::-webkit-datetime-edit { padding: 0; }
 .race-result input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+.input--wheel.is-zero { color: var(--text-3); }
