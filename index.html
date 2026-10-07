@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark" data-palette="aurore">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Allure : saison, courses et mesures sportives.">
+  <meta name="theme-color" content="#16171c">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Allure">
+  <meta name="format-detection" content="telephone=no">
+  <title>Allure</title>
+
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- Thème et palette appliqués avant le premier rendu (évite un flash). -->
+  <script>
+    try {
+      if (localStorage.getItem('allure_theme') === 'light') document.documentElement.dataset.theme = 'light';
+      var p = localStorage.getItem('allure_palette'); if (p) document.documentElement.dataset.palette = p;
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/views/season.css">
+  <link rel="stylesheet" href="css/views/races.css">
+  <link rel="stylesheet" href="css/views/metrics.css">
+  <link rel="stylesheet" href="css/allure.css">
+
+  <script type="module" src="js/main.js"></script>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="topbar__titles">
+        <div class="topbar__kicker" id="headerKicker">Allure</div>
+        <h1 class="topbar__title" id="headerTitle">Courses</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="sync-pill" id="syncStatus" data-status="connecting" role="status"><span class="spinner spinner--xs"></span><span>Connexion…</span></span>
+        <button type="button" class="icon-btn icon-btn--glass" id="settingsBtn" aria-label="Apparence"><span data-icon="settings" data-size="20"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabbar" aria-label="Navigation principale">
+    <button type="button" class="tabbar__item is-active" data-view="raceView" aria-current="page"><span data-icon="flag"></span><span>Courses</span></button>
+    <button type="button" class="tabbar__item" data-view="seasonView"><span data-icon="calendar"></span><span>Saison</span></button>
+    <button type="button" class="tabbar__item" data-view="metricsView"><span data-icon="chart"></span><span>Mesures</span></button>
+  </nav>
+
+  <main class="app" id="main" tabindex="-1">
+
+    <!-- ================= COURSES ================= -->
+    <section id="raceView" class="view" hidden aria-labelledby="headerTitle">
+      <section class="race-hero card card--hero" id="nextRace" aria-live="polite"></section>
+
+      <section class="section">
+        <header class="section__head">
+          <h2 class="section__title">Courses suivantes</h2>
+          <button type="button" class="btn btn--primary btn--icon" data-action="add" aria-label="Ajouter une course"><span data-icon="plus" data-size="20"></span></button>
+        </header>
+        <div id="raceUpcomingList" class="stack"></div>
+        <button type="button" class="btn btn--soft race-more" id="raceMore" data-action="toggle-upcoming" aria-controls="raceUpcomingList" hidden></button>
+      </section>
+
+      <section class="section card">
+        <header class="card__head">
+          <div><h2 class="card__title">Bilan annuel</h2><p class="card__sub">Vue d’ensemble de votre saison</p></div>
+          <div class="year-nav">
+            <button type="button" class="icon-btn icon-btn--sm" id="raceYearPrev" data-action="year-prev" aria-label="Année précédente"><span data-icon="chevronLeft" data-size="18"></span></button>
+            <strong id="raceYear" aria-live="polite"></strong>
+            <button type="button" class="icon-btn icon-btn--sm" id="raceYearNext" data-action="year-next" aria-label="Année suivante"><span data-icon="chevronRight" data-size="18"></span></button>
+          </div>
+        </header>
+        <button type="button" class="link-btn link-btn--center" id="raceYearReset" data-action="year-reset" hidden>Revenir à l’année en cours</button>
+        <div class="stats-grid" id="raceStatsGrid"></div>
+        <div class="donut-chart donut-chart--divided">
+          <div class="donut" id="raceDonut"><div class="donut__center"><strong id="raceDonutTotal">0</strong><span>courses</span></div></div>
+          <div class="legend" id="raceLegend"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <header class="section__head"><h2 class="section__title">Courses passées · <span id="raceHistoryYear"></span></h2></header>
+        <div id="raceHistoryList" class="stack"></div>
+      </section>
+    </section>
+
+    <!-- ================= MESURES ================= -->
+    <section id="metricsView" class="view" hidden aria-labelledby="headerTitle">
+      <div class="metrics-grid">
+        <section class="card metric-card">
+          <header class="metric-card__head">
+            <div><h2 class="card__title">Poids</h2><p class="card__sub">Évolution de votre poids</p></div>
+            <div class="metric-card__latest"><div class="metric-card__value" id="weightLatest">—</div><div class="delta" id="weightDelta"></div></div>
+          </header>
+          <form class="metric-form" id="weightForm" data-kind="weight" novalidate>
+            <div class="field"><label class="field__label" for="w-date">Date</label><input class="input" id="w-date" type="date" name="date" required></div>
+            <div class="field"><label class="field__label" for="w-value">Poids · kg</label><input class="input" id="w-value" name="value" inputmode="decimal" placeholder="72,5" autocomplete="off"></div>
+            <button type="submit" class="btn btn--add btn--icon" aria-label="Ajouter la mesure de poids" title="Ajouter"><span data-icon="plus" data-size="20"></span></button>
+          </form>
+          <div class="chart-nav" id="weightNav" hidden>
+            <button type="button" class="chip-btn chip-btn--icon" data-action="window" data-kind="weight" data-dir="1" aria-label="Mesures plus anciennes"><span data-icon="chevronLeft" data-size="16"></span></button>
+            <span class="chart-nav__range"></span>
+            <button type="button" class="chip-btn chip-btn--icon" data-action="window" data-kind="weight" data-dir="-1" aria-label="Mesures plus récentes"><span data-icon="chevronRight" data-size="16"></span></button>
+          </div>
+          <div class="chart-host" id="weightChart"></div>
+          <button type="button" class="link-btn link-btn--center" data-action="history" data-kind="weight">Voir tout l’historique</button>
+        </section>
+
+        <section class="card metric-card">
+          <header class="metric-card__head">
+            <div><h2 class="card__title">FTP vélo</h2><p class="card__sub">Puissance fonctionnelle seuil</p></div>
+            <div class="metric-card__latest"><div class="metric-card__value" id="ftpLatest">—</div><div class="delta" id="ftpDelta"></div></div>
+          </header>
+          <form class="metric-form" id="ftpForm" data-kind="ftp" novalidate>
+            <div class="field"><label class="field__label" for="f-date">Date du test</label><input class="input" id="f-date" type="date" name="date" required></div>
+            <div class="field"><label class="field__label" for="f-value">FTP · W</label><input class="input" id="f-value" name="value" inputmode="numeric" placeholder="250" autocomplete="off"></div>
+            <button type="submit" class="btn btn--add btn--icon" aria-label="Ajouter le test FTP" title="Ajouter"><span data-icon="plus" data-size="20"></span></button>
+          </form>
+          <div class="chart-nav" id="ftpNav" hidden>
+            <button type="button" class="chip-btn chip-btn--icon" data-action="window" data-kind="ftp" data-dir="1" aria-label="Mesures plus anciennes"><span data-icon="chevronLeft" data-size="16"></span></button>
+            <span class="chart-nav__range"></span>
+            <button type="button" class="chip-btn chip-btn--icon" data-action="window" data-kind="ftp" data-dir="-1" aria-label="Mesures plus récentes"><span data-icon="chevronRight" data-size="16"></span></button>
+          </div>
+          <div class="chart-host" id="ftpChart"></div>
+          <button type="button" class="link-btn link-btn--center" data-action="history" data-kind="ftp">Voir tout l’historique</button>
+        </section>
+      </div>
+
+      <section class="card metric-card">
+        <header class="metric-card__head"><div><h2 class="card__title">Mensurations</h2><p class="card__sub">Comparaison avec une prise de référence</p></div></header>
+        <button type="button" class="btn btn--add btn--block" data-action="measure"><span data-icon="body" data-size="18"></span><span>Nouvelle prise de mensurations</span></button>
+        <div class="divider"></div>
+        <div id="measureCompare"></div>
+        <button type="button" class="link-btn link-btn--center" data-action="history" data-kind="measurements">Voir tout l’historique</button>
+      </section>
+    </section>
+
+    <!-- ================= SAISON ================= -->
+    <section id="seasonView" class="view" hidden aria-labelledby="headerTitle">
+        <section class="card season-card" id="seasonCard">
+          <header class="card__head">
+            <div><h2 class="card__title">Phases</h2></div>
+            <button type="button" class="btn btn--primary btn--icon" data-season="add" aria-label="Ajouter une phase"><span data-icon="plus" data-size="20"></span></button>
+          </header>
+          <div id="seasonCurrent"></div>
+          <div class="season-nav">
+            <button type="button" class="icon-btn icon-btn--sm" data-season="prev" aria-label="Mois précédents"><span data-icon="chevronLeft" data-size="18"></span></button>
+            <strong id="seasonRange" aria-live="polite"></strong>
+            <button type="button" class="icon-btn icon-btn--sm" data-season="next" aria-label="Mois suivants"><span data-icon="chevronRight" data-size="18"></span></button>
+          </div>
+          <button type="button" class="link-btn link-btn--center season-reset" id="seasonReset" data-season="reset" hidden>Revenir à aujourd’hui</button>
+          <div id="seasonCalendar"></div>
+          <div id="seasonList"></div>
+        </section>
+    </section>
+  </main>
+
+  <!-- ================= FEUILLES / MODALES ================= -->
+
+  <!-- Éditeur de phase d'entraînement -->
+  <div class="sheet-backdrop" id="phaseSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="phaseSheetTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="phaseSheetTitle">Nouvelle phase</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form" id="phaseForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="ph-type">Phase</label><select class="input select" id="ph-type" name="type" required></select></div>
+        <p class="phase-advice" id="phaseAdvice"></p>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="ph-start">Début</label><input class="input" id="ph-start" type="date" name="start" required></div>
+          <div class="field"><label class="field__label" for="ph-end">Fin</label><input class="input" id="ph-end" type="date" name="end" required></div>
+        </div>
+        <div class="field"><label class="field__label" for="ph-note">Note <span class="field__opt">(facultatif)</span></label><input class="input" id="ph-note" name="note" maxlength="200" placeholder="Ex. Objectif : Trail des Forts" autocomplete="off"></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Éditeur de course -->
+  <div class="sheet-backdrop" id="raceSheet" hidden>
+    <div class="sheet sheet--tall" role="dialog" aria-modal="true" aria-labelledby="raceSheetTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="raceSheetTitle">Nouvelle course</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="raceForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="form-grid">
+          <div class="field field--full"><label class="field__label" for="r-name">Nom de la course</label><input class="input" id="r-name" name="name" maxlength="100" required placeholder="Ex. Étape du Tour" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="raceSport">Sport</label><select class="input select" id="raceSport" name="sport" required></select></div>
+          <div class="field"><label class="field__label" for="r-date">Date</label><input class="input" id="r-date" type="date" name="date" required></div>
+          <div class="field"><label class="field__label" for="r-time">Heure de départ</label><input class="input" id="r-time" type="time" name="time"></div>
+          <div class="field"><label class="field__label" for="r-location">Lieu</label><input class="input" id="r-location" name="location" maxlength="100" placeholder="Ex. Besançon" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="r-distance">Distance · km</label><input class="input" id="r-distance" name="distance" inputmode="decimal" placeholder="160" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="r-elevation">Dénivelé · m</label><input class="input" id="r-elevation" name="elevation" inputmode="numeric" placeholder="5300" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="r-price">Prix · €</label><input class="input" id="r-price" name="price" inputmode="decimal" placeholder="45" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="r-target">Objectif de temps</label><input class="input" id="r-target" name="target" maxlength="40" placeholder="7h30" autocomplete="off"></div>
+          <div class="field field--full"><label class="field__label" for="r-notes">Notes</label><textarea class="input textarea" id="r-notes" name="notes" maxlength="2000" rows="3" placeholder="Stratégie, matériel, ravitaillement…"></textarea></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Historique des mesures -->
+  <div class="sheet-backdrop" id="historySheet" hidden>
+    <div class="sheet sheet--tall" role="dialog" aria-modal="true" aria-labelledby="historyTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="historyTitle">Historique</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="sheet__scroll" id="historyContent"></div>
+    </div>
+  </div>
+
+  <!-- Prise de mensurations sur mannequin -->
+  <div class="sheet-backdrop" id="measureSheet" hidden>
+    <div class="sheet sheet--tall sheet--measure" role="dialog" aria-modal="true" aria-labelledby="measureTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="measureTitle">Nouvelle prise</h2><p class="sheet__sub">Mètre ruban à plat, sans serrer, de préférence le matin.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form" id="measureForm" data-kind="measurements" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="m-date">Date de la prise</label><input class="input" id="m-date" type="date" name="date" required></div>
+        <div id="bodyMapHost"></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export calendrier iOS -->
+  <div class="sheet-backdrop sheet-backdrop--dialog" id="calendarSheet" hidden>
+    <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle" tabindex="-1" id="calendarContent"></div>
+  </div>
+
+  <!-- Apparence : palette et thème -->
+  <div class="sheet-backdrop" id="styleSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="styleTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="styleTitle">Apparence</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="sheet__scroll">
+        <p class="field__label">Couleurs</p>
+        <div class="palette-grid" id="paletteGrid"></div>
+        <p class="field__label">Thème</p>
+        <div class="segmented" role="radiogroup" id="themeSwitch">
+          <button type="button" role="radio" data-theme-pick="dark">Sombre</button>
+          <button type="button" role="radio" data-theme-pick="light">Clair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <noscript><div class="noscript">JavaScript est nécessaire pour utiliser cette application.</div></noscript>
+</body>
+</html>

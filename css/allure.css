@@ -1,0 +1,76 @@
+/* =========================================================
+   ALLURE — style minimaliste (anthracite, cartes pleines,
+   un seul accent en dégradé) et palettes au choix.
+   Chargé en dernier : surcharge les jetons de Carnet.
+   ========================================================= */
+:root {
+  --bg: #16171c;
+  --bg-2: #16171c;
+  --surface: #1f2026;
+  --surface-solid: #1f2026;
+  --surface-2: #26272e;
+  --surface-3: #2e3038;
+  --field: #26272e;
+  --border: rgba(255, 255, 255, .05);
+  --border-strong: rgba(255, 255, 255, .1);
+  --text: #f4f4f6;
+  --text-2: #a3a5b0;
+  --text-3: #6b6e7a;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --shadow-md: 0 10px 30px -14px rgba(0, 0, 0, .6);
+  --inner-highlight: none;
+  --glass-blur: none;
+}
+:root[data-theme="light"] {
+  --bg: #f4f4f7;
+  --bg-2: #f4f4f7;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-2: #f0f0f4;
+  --surface-3: #e7e7ed;
+  --field: #f0f0f4;
+  --border: rgba(20, 20, 40, .06);
+  --border-strong: rgba(20, 20, 40, .12);
+  --text: #15161b;
+  --text-2: #5d606c;
+  --text-3: #9295a2;
+}
+
+/* ---------- Palettes ---------- */
+:root[data-palette="aurore"] { --accent: #b65cff; --accent-2: #ff8a4c; --accent-soft: rgba(182, 92, 255, .14); --gradient-accent: linear-gradient(135deg, #7b5cff, #ff4f9a 55%, #ff9f43); --shadow-accent: 0 10px 24px -10px rgba(255, 79, 154, .55); }
+:root[data-palette="lagon"] { --accent: #4aa8ff; --accent-2: #5b6cff; --accent-soft: rgba(74, 168, 255, .14); --gradient-accent: linear-gradient(135deg, #36d6ff, #5b6cff); --shadow-accent: 0 10px 24px -10px rgba(74, 140, 255, .55); }
+:root[data-palette="braise"] { --accent: #ff6b4f; --accent-2: #ffb340; --accent-soft: rgba(255, 107, 79, .14); --gradient-accent: linear-gradient(135deg, #ff4d5e, #ffb340); --shadow-accent: 0 10px 24px -10px rgba(255, 107, 79, .55); }
+:root[data-palette="menthe"] { --accent: #2ee6a8; --accent-2: #1fb9d6; --accent-soft: rgba(46, 230, 168, .14); --gradient-accent: linear-gradient(135deg, #2ee6a8, #1fb9d6); --shadow-accent: 0 10px 24px -10px rgba(46, 230, 168, .5); }
+:root { --accent-ink: #fff; }
+:root[data-palette="menthe"] { --accent-ink: #052119; }
+
+/* ---------- Surfaces : pleines, sans verre ni halo ---------- */
+body { background: var(--bg); }
+.ambient { display: none; }
+.card, .race-card, .metric-card { background: var(--surface); border-color: var(--border); box-shadow: none; }
+.card--hero, .card--gradient, .race-hero { background: var(--surface); border: 0; }
+.race-hero { position: relative; overflow: hidden; }
+.race-hero::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--gradient-accent); }
+.topbar { background: var(--bg); }
+.topbar__kicker { background: var(--gradient-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tabbar { grid-template-columns: repeat(3, 1fr); width: min(360px, calc(100% - 24px)); background: color-mix(in srgb, var(--surface-solid) 94%, transparent); border-color: var(--border); }
+.tabbar__item.is-active { color: var(--text); background: var(--surface-3); }
+.tabbar__item.is-active [data-icon] { color: var(--accent); }
+.btn--primary, .btn--add { background: var(--gradient-accent); color: var(--accent-ink); border: 0; box-shadow: var(--shadow-accent); }
+.badge { background: var(--surface-3); color: var(--text-2); }
+.badge--glass { background: var(--accent-soft); color: var(--accent); border: 0; }
+.input, .select, .textarea { background: var(--field); border-color: transparent; }
+.sync-pill { background: var(--surface-2); }
+@media (min-width: 960px) { .tabbar { grid-template-columns: repeat(3, auto); width: auto; } }
+
+/* ---------- Apparence ---------- */
+.palette-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0 18px; }
+.palette { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px; border-radius: 18px; background: var(--surface-2); border: 2px solid transparent; text-align: left; }
+.palette.is-active { border-color: var(--accent); }
+.palette__swatch { width: 100%; height: 44px; border-radius: 12px; }
+.palette__name { font-weight: 800; }
+.palette__hint { font-size: 12px; color: var(--text-3); }
+#themeSwitch button[aria-checked="true"] { background: var(--surface-3); color: var(--text); }
+.race-hero__countdown { background: var(--surface-2); border: 0; }
+.race-hero__actions .btn--glass, .race-hero__icon { background: var(--surface-2); border-color: transparent; }
