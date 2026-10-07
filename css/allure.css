@@ -70,3 +70,11 @@ body { background: var(--bg); }
 
 /* ---------- Apparence ---------- */
 #themeSwitch button[aria-checked="true"] { background: var(--surface-3); color: var(--text); }
+
+/* Résultat : trois cases identiques, bordées, valeurs alignées (y compris la roulette iOS). */
+.race-result .input { -webkit-appearance: none; appearance: none; height: 48px; min-height: 48px; padding: 0 6px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); font-size: var(--fs-md); font-weight: 750; line-height: 46px; text-align: center; font-variant-numeric: tabular-nums; }
+.race-result .input:focus { border-color: var(--accent); }
+.race-result input[type="time"] { display: block; width: 100%; }
+.race-result input[type="time"]::-webkit-date-and-time-value { text-align: center; margin: 0; line-height: 46px; min-height: 46px; }
+.race-result input[type="time"]::-webkit-datetime-edit { padding: 0; }
+.race-result input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
