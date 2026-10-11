@@ -222,6 +222,8 @@ function openEditor(id = null) {
   form.elements.editId.value = r?.id || '';
   $('#raceSheetTitle').textContent = r ? 'Modifier la course' : 'Nouvelle course';
   if (r) ['name', 'sport', 'date', 'time', 'location', 'distance', 'elevation', 'price', 'notes'].forEach(k => (form.elements[k].value = r[k] ?? ''));
+  // Nouvelle course : sport de la dernière course saisie, un choix de moins à faire.
+  else if (state.races.length) form.elements.sport.value = [...state.races].sort((a, b) => a.date.localeCompare(b.date)).at(-1).sport;
   form.elements.target.value = wheelValue(r?.target);
   form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';

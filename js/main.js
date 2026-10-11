@@ -1,11 +1,12 @@
-/* Point d'entrée d'Allure : état, vues (Courses, Saison, Mesures), apparence et synchronisation. */
+/* Point d'entrée d'Allure : état, vues (Courses, Saison, Mesures), réglages, compte et synchronisation. */
 import { $, $$, debounce } from './core/utils.js';
 import { formatKey } from './core/dates.js';
-import { state, loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, snapshot } from './core/store.js';
-import { initCloud, pushCloud, flushNow, isCloudAvailable } from './services/firebase.js';
+import { loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, snapshot, resetLocal } from './core/store.js';
+import { initCloud, pushCloud, flushNow, clearPending, cloudState, currentUser, signOutUser, retryMigration, WAITING_MESSAGE } from './services/firebase.js';
 import { readText, write } from './services/storage.js';
-import { initDialogs, openSheet } from './ui/dialog.js';
-import { applyTheme } from './ui/theme.js';
+import { initDialogs, openSheet, closeSheet, confirmDialog } from './ui/dialog.js';
+import { initTheme, themeChoice, setThemeChoice } from './ui/theme.js';
+import { initAuth, showAuth, hideAuth, isAuthShown, noAccountChosen, forgetNoAccount } from './ui/auth.js';
 import { renderStatus } from './ui/status.js';
 import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
@@ -21,7 +22,10 @@ const VIEWS = {
   metricsView: { title: 'Mesures', show: renderMetrics, slices: ['bodyMetrics'] }
 };
 const VIEW_KEY = 'allure_last_view';
+// uid du compte dont le nœud (migré) a déjà été reçu sur cet appareil ('1' : ancienne base publique).
 const SYNCED_KEY = 'allure_synced_once';
+// Dernier compte connecté sur cet appareil (changement de compte : données locales vidées).
+const LAST_UID = 'allure_last_uid';
 let currentView = 'raceView';
 
 function switchView(id, { scroll = true } = {}) {
@@ -46,26 +50,97 @@ function onStateChange(slices) {
   if (view.slices.some(s => slices.includes(s))) view.show();
 }
 
-/* ---------- Apparence (propre à l'appareil) ---------- */
-const theme = () => (readText('allure_theme', 'dark') === 'light' ? 'light' : 'dark');
-
-function renderStyleSheet() {
-  $$('[data-theme-pick]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.themePick === theme())));
+/* ---------- Réglages : thème (propre à l'appareil) et compte ---------- */
+function renderThemeSwitch() {
+  $$('[data-theme-pick]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.themePick === themeChoice())));
 }
 
-function initAppearance() {
-  applyTheme(theme());
+function renderAccount() {
+  const user = currentUser();
+  const state = cloudState();
+  $('#accountLine').textContent = user
+    ? `Connecté : ${user.email}${state === 'waiting' ? `. ${WAITING_MESSAGE}` : ''}`
+    : state === 'signedOut'
+      ? 'Sans compte : données de cet appareil uniquement, sans synchronisation.'
+      : state === 'local'
+        ? 'Synchronisation indisponible : données enregistrées sur cet appareil.'
+        : 'Connexion…';
+  $('#logoutBtn').hidden = !user;
+  $('#loginBtn').hidden = Boolean(user) || state !== 'signedOut';
+}
+
+function initSettings() {
+  initTheme();
   $('#settingsBtn').addEventListener('click', () => {
-    renderStyleSheet();
-    openSheet('styleSheet', { focus: false });
+    renderThemeSwitch();
+    renderAccount();
+    openSheet('settingsSheet', { focus: false });
   });
-  $('#styleSheet').addEventListener('click', e => {
+  $('#themeSwitch').addEventListener('click', e => {
     const t = e.target.closest('[data-theme-pick]')?.dataset.themePick;
     if (!t) return;
-    write('allure_theme', t);
-    applyTheme(t, { animate: true });
-    renderStyleSheet();
+    setThemeChoice(t);
+    renderThemeSwitch();
   });
+  $('#loginBtn').addEventListener('click', () => {
+    closeSheet('settingsSheet');
+    showAuth();
+  });
+  $('#logoutBtn').addEventListener('click', async () => {
+    if (!currentUser()) return;
+    const ok = await confirmDialog({ title: 'Se déconnecter ?', message: 'Vos données restent enregistrées dans votre compte.', confirmLabel: 'Se déconnecter' });
+    if (!ok) return;
+    closeSheet('settingsSheet');
+    try {
+      await signOutUser();
+    } catch (error) {
+      console.warn('[auth] déconnexion', error);
+      toastError('Déconnexion impossible. Réessayez.');
+    }
+  });
+}
+
+/* ---------- Compte ---------- */
+function onUser(user) {
+  if (user) {
+    const last = readText(LAST_UID, '');
+    if (last && last !== user.uid) {
+      // Autre compte que le précédent sur cet appareil : on repart d'une base vide.
+      clearPending();
+      resetLocal();
+    } else if (readText(SYNCED_KEY, '') !== user.uid) {
+      // Modifications faites sans ce compte (appareil jamais synchronisé avec lui) : jamais envoyées.
+      clearPending();
+    }
+    write(LAST_UID, user.uid);
+    forgetNoAccount();
+    hideAuth();
+  } else if (!noAccountChosen()) showAuth(); // sauf si « Continuer sans compte » a déjà été choisi
+  renderAccount();
+}
+
+/*
+ * Garde-fou d'écriture : tant que cet appareil n'a pas reçu le nœud du compte
+ * (migré depuis l'ancienne base), l'état local peut être vide ou périmé ;
+ * enregistrer une tranche (ex. une seule course) écraserait alors la liste
+ * complète partagée avec Carnet. Les modifications sont donc refusées, sauf :
+ * - nœud reçu (synchronisation active) ;
+ * - sans compte : données de l'appareil uniquement, jamais envoyées (le compte prime à la connexion) ;
+ * - Firebase injoignable : rien n'est envoyé, appareil déjà synchronisé une fois ;
+ * - compte déjà synchronisé sur cet appareil : envoi à la reconnexion.
+ */
+function canWrite() {
+  const state = cloudState();
+  const synced = readText(SYNCED_KEY, '');
+  if (state === 'ready' || state === 'signedOut') return true;
+  if (state === 'local') {
+    if (synced) return true;
+  } else if (state === 'pending') {
+    const uid = currentUser()?.uid || readText(LAST_UID, '');
+    if (uid && synced === uid) return true;
+  }
+  toastError(state === 'waiting' ? WAITING_MESSAGE : 'Connexion à vos données en cours… Réessayez dans un instant.');
+  return false;
 }
 
 /* Saison : un appui sur un jour du calendrier en donne le détail. */
@@ -92,7 +167,8 @@ function init() {
   initGlobalErrors();
   loadLocal();
   $$('[data-icon]').forEach(el => (el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 22)));
-  initAppearance();
+  initSettings();
+  initAuth({ onLocal: () => toast('Sans compte : données de cet appareil uniquement', { type: 'info' }) });
 
   initDialogs();
   initCalendarPrompt();
@@ -107,24 +183,30 @@ function init() {
   setInterval(() => currentView === 'raceView' && tickCountdowns(), 30000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
-    else VIEWS[currentView].show();
+    else {
+      VIEWS[currentView].show();
+      retryMigration();
+    }
   });
   window.addEventListener('pagehide', flushNow);
   window.addEventListener('resize', debounce(() => currentView === 'metricsView' && renderMetrics(), 150));
 
-  // Écriture autorisée seulement si cet appareil a déjà reçu les données partagées.
-  setWriteGuard(() => {
-    if (isCloudAvailable() || readText(SYNCED_KEY, '') === '1') return true;
-    toastError('Connexion à vos données en cours… Réessayez dans un instant.');
-    return false;
-  });
+  setWriteGuard(canWrite);
   setCloudSink(pushCloud);
   initCloud({
-    onRemote: (cloud, skip) => {
-      write(SYNCED_KEY, '1');
-      return applyRemote(cloud, skip);
+    onUser,
+    onRemote: applyRemote,
+    onReady: uid => {
+      write(SYNCED_KEY, uid);
+      renderAccount();
     },
-    onStatus: renderStatus,
+    onWaiting: () => {
+      if (!isAuthShown()) toast(WAITING_MESSAGE, { type: 'info', duration: 6000 });
+    },
+    onStatus: (status, detail) => {
+      renderStatus(status, detail);
+      if (status === 'local') renderAccount();
+    },
     onError: message => toastError(`Synchronisation : ${message}`),
     getSnapshot: snapshot
   });

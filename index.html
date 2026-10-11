@@ -18,10 +18,14 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
-  <!-- Thème appliqué avant le premier rendu (évite un flash). -->
+  <!-- Thème appliqué avant le premier rendu (évite un flash). Auto : réglage clair / sombre du système. -->
   <script>
     try {
-      if (localStorage.getItem('allure_theme') === 'light') document.documentElement.dataset.theme = 'light';
+      var t = localStorage.getItem('allure_theme');
+      if (t === 'dark' && !localStorage.getItem('allure_theme_auto_v1')) t = 'auto'; // ancien défaut, migré au chargement
+      if (t !== 'dark' && t !== 'light') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'light' ? '#f4f4f7' : '#16171c');
     } catch (e) {}
   </script>
 
@@ -40,6 +44,28 @@
 <body>
   <a class="skip-link" href="#main">Aller au contenu</a>
 
+  <!-- ================= CONNEXION (seulement si aucun compte n'est connecté) ================= -->
+  <div class="auth" id="authScreen" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
+    <div class="auth__card">
+      <img class="auth__logo" src="icon.svg" alt="" aria-hidden="true" width="64" height="64">
+      <div class="auth__kicker">Allure</div>
+      <form class="form auth__form" id="authForm" novalidate>
+        <h2 class="auth__title" id="authTitle">Connexion</h2>
+        <p class="auth__sub" id="authSub">Même compte que Mon Garage et Ma Maison.</p>
+        <div class="field"><label class="field__label" for="authEmail">E-mail</label><input class="input" id="authEmail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="vous@email.fr" required></div>
+        <div class="field" id="authPasswordField"><label class="field__label" for="authPassword">Mot de passe</label><input class="input" id="authPassword" name="password" type="password" autocomplete="current-password" placeholder="6 caractères minimum" required></div>
+        <p class="auth__error" id="authError" role="alert"></p>
+        <button type="submit" class="btn btn--primary btn--lg btn--block" id="authSubmit">Se connecter</button>
+        <button type="button" class="link-btn link-btn--center" id="authForgot">Mot de passe oublié ?</button>
+        <button type="button" class="btn btn--ghost btn--block" id="authSwitch">Créer un compte</button>
+      </form>
+      <div class="auth__local">
+        <button type="button" class="btn btn--soft btn--block" id="authLocal">Continuer sans compte</button>
+        <p>Données sur cet appareil uniquement, sans synchronisation.</p>
+      </div>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="topbar__inner">
       <div class="topbar__titles">
@@ -48,7 +74,7 @@
       </div>
       <div class="topbar__actions">
         <span class="sync-pill" id="syncStatus" data-status="connecting" role="status"><span class="spinner spinner--xs"></span><span>Connexion…</span></span>
-        <button type="button" class="icon-btn icon-btn--glass" id="settingsBtn" aria-label="Apparence"><span data-icon="settings" data-size="20"></span></button>
+        <button type="button" class="icon-btn icon-btn--glass" id="settingsBtn" aria-label="Réglages"><span data-icon="settings" data-size="20"></span></button>
       </div>
     </div>
   </header>
@@ -242,16 +268,24 @@
     <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle" tabindex="-1" id="calendarContent"></div>
   </div>
 
-  <!-- Apparence : thème -->
-  <div class="sheet-backdrop" id="styleSheet" hidden>
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="styleTitle" tabindex="-1">
+  <!-- Réglages : thème et compte -->
+  <div class="sheet-backdrop" id="settingsSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
-      <header class="sheet__head"><h2 class="sheet__title" id="styleTitle">Apparence</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <header class="sheet__head"><h2 class="sheet__title" id="settingsTitle">Réglages</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <div class="sheet__scroll">
         <p class="field__label">Thème</p>
-        <div class="segmented" role="radiogroup" id="themeSwitch">
+        <div class="segmented" role="radiogroup" id="themeSwitch" aria-label="Thème">
+          <button type="button" role="radio" data-theme-pick="auto">Auto</button>
           <button type="button" role="radio" data-theme-pick="dark">Sombre</button>
           <button type="button" role="radio" data-theme-pick="light">Clair</button>
+        </div>
+        <p class="settings-hint">Auto suit le réglage clair / sombre de l’appareil.</p>
+        <p class="field__label">Compte</p>
+        <div class="settings-account">
+          <p class="settings-account__line" id="accountLine">Connexion…</p>
+          <button type="button" class="btn btn--soft btn--block" id="loginBtn" hidden>Se connecter</button>
+          <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
         </div>
       </div>
     </div>

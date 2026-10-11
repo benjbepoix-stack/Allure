@@ -155,10 +155,12 @@ const phaseSchema = {
   note: [rules.maxLength(200)]
 };
 
+/** @returns {boolean} faux si l'enregistrement a été refusé (appareil jamais synchronisé). */
 function savePhases(phases, message) {
   state.objectives[PHASES_KEY] = phases;
-  if (commit('objectives') === false) return;
+  if (commit('objectives') === false) return false;
   if (message) toast(message);
+  return true;
 }
 
 function onSubmit(e) {
@@ -175,8 +177,8 @@ function onSubmit(e) {
   if (index >= 0) phases[index] = phase;
   else phases.push(phase);
   phases.sort((a, b) => a.start.localeCompare(b.start));
-  closeSheet('phaseSheet');
-  savePhases(phases, index >= 0 ? 'Phase modifiée' : 'Phase ajoutée');
+  // La feuille ne se ferme qu'une fois la phase enregistrée (sinon la saisie serait perdue).
+  if (savePhases(phases, index >= 0 ? 'Phase modifiée' : 'Phase ajoutée')) closeSheet('phaseSheet');
 }
 
 async function onClick(e) {
