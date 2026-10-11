@@ -9,10 +9,10 @@ import { sameJSON } from './utils.js';
 import { normalizeObjectives, normalizeRaces, normalizeBodyMetrics } from './schema.js';
 
 /*
- * Allure partage la base Firebase de Carnet (nœud `app`) mais ne lit et
+ * Allure partage le nœud Firebase de Carnet (users/<uid>/carnet) mais ne lit et
  * n'écrit QUE ses tranches : objectives (phases de saison), races, bodyMetrics.
  * Les autres tranches (agenda, tâches, planning…) appartiennent à Carnet et ne
- * sont jamais touchées ici. Le thème et la palette restent propres à l'appareil.
+ * sont jamais touchées ici. Le thème reste propre à l'appareil.
  */
 const LOCAL_KEYS = {
   objectives: 'allure_objectives',
@@ -55,6 +55,15 @@ export function loadLocal() {
   state.races = normalizeRaces(readJSON(LOCAL_KEYS.races, []));
   state.bodyMetrics = normalizeBodyMetrics(readJSON(LOCAL_KEYS.bodyMetrics, null));
   SLICES.forEach(persist);
+}
+
+/** Vide les données de l'appareil (autre compte connecté sur cet appareil). */
+export function resetLocal() {
+  state.objectives = normalizeObjectives({});
+  state.races = normalizeRaces([]);
+  state.bodyMetrics = normalizeBodyMetrics(null);
+  SLICES.forEach(persist);
+  notify(SLICES, 'remote');
 }
 
 export const subscribe = fn => (listeners.add(fn), () => listeners.delete(fn));

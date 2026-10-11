@@ -14,8 +14,9 @@ let current = null;
 
 export function renderStatus(status, detail) {
   const el = $('#syncStatus');
-  if (!el || status === current) return;
-  current = status;
+  const key = `${status}|${detail || ''}`;
+  if (!el || key === current) return;
+  current = key;
   const cfg = LABELS[status] || LABELS.local;
   el.dataset.status = status;
   el.title = detail ? `${cfg.title} — ${detail}` : cfg.title;
