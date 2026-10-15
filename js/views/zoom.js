@@ -317,7 +317,7 @@ export function renderZoom({ dir = 0, origin = null, slide = 0 } = {}) {
   body.innerHTML = [yearHTML, monthHTML, weekHTML, dayHTML][level]();
   const title = zoomTitle();
   $('#headerTitle').textContent = title;
-  document.title = `${title} · Allure`;
+  document.title = `${title} · Cadence`;
   document.querySelectorAll('#zoomLevels [data-level]').forEach(b => b.setAttribute('aria-checked', String(Number(b.dataset.level) === level)));
   $('#zoomHint').textContent = HINTS[level];
   $('#zoomToday').hidden = showsToday();

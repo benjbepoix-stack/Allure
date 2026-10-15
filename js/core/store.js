@@ -9,7 +9,7 @@ import { sameJSON } from './utils.js';
 import { normalizeObjectives, normalizeRaces, normalizeBodyMetrics } from './schema.js';
 
 /*
- * Allure partage le nœud Firebase de Carnet (users/<uid>/carnet) mais ne lit et
+ * Cadence partage le nœud Firebase de Carnet (users/<uid>/carnet) mais ne lit et
  * n'écrit QUE ses tranches : objectives (phases de saison), races, bodyMetrics.
  * Les autres tranches (agenda, tâches, planning…) appartiennent à Carnet et ne
  * sont jamais touchées ici. Le thème reste propre à l'appareil.

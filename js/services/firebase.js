@@ -5,7 +5,7 @@
  *   bloqueur…), l'application continue en mode local, sans écran bloquant.
  * - Session conservée sur l'appareil et partagée avec les autres apps de la
  *   même adresse (Mon Garage, Ma Maison, Carnet, Mon budget).
- * - Données : users/<uid>/carnet, nœud partagé avec Carnet. Allure n'y écrit
+ * - Données : users/<uid>/carnet, nœud partagé avec Carnet. Cadence n'y écrit
  *   que ses tranches (races, objectives, bodyMetrics), regroupées (debounce)
  *   puis envoyées en un seul `update`.
  * - Migration unique depuis l'ancienne base publique de Carnet (voir `start`).
@@ -26,7 +26,7 @@ const NOTES_DELAY = 700;
 /* Ancienne base publique de Carnet : lue une seule fois, pour la migration. */
 const LEGACY_HOST = 'dashboard---projet-default-rtdb.europe-west1.firebasedatabase.app';
 const LEGACY_URL = `https://${LEGACY_HOST}/app.json`;
-/* Tranches de Carnet : toutes copiées à la migration, même celles qu'Allure n'utilise pas.
+/* Tranches de Carnet : toutes copiées à la migration, même celles qu'Cadence n'utilise pas.
    garage_alerts, maison_alerts et migrated ne comptent pas comme des données de Carnet. */
 const CARNET_SLICES = ['dashboard', 'notes', 'theme', 'families', 'plans', 'objectives', 'races', 'bodyMetrics'];
 
@@ -233,7 +233,7 @@ function goReady(node) {
  * - marqueur `migrated` présent → fonctionnement normal ;
  * - sinon, copie de l'ancienne base (toutes les tranches de Carnet absentes du nœud)
  *   + marqueur, puis application comme données distantes ;
- * - ancienne base vide ou injoignable → rien n'est amorcé (Allure ne connaît pas les
+ * - ancienne base vide ou injoignable → rien n'est amorcé (Cadence ne connaît pas les
  *   tranches de Carnet) : écritures bloquées, nouvel essai au prochain instantané.
  */
 async function start(token) {

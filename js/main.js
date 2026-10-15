@@ -1,4 +1,4 @@
-/* Point d'entrée d'Allure : état, vues (Saison en zoom, Corps), ajout, réglages, compte et synchronisation. */
+/* Point d'entrée d'Cadence : état, vues (Saison en zoom, Corps), ajout, réglages, compte et synchronisation. */
 import { $, $$, debounce } from './core/utils.js';
 import { formatKey, todayKey } from './core/dates.js';
 import { loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, snapshot, resetLocal } from './core/store.js';
@@ -39,7 +39,7 @@ function switchView(id, { scroll = true } = {}) {
     else b.removeAttribute('aria-current');
   });
   $('#headerTitle').textContent = VIEWS[id].title;
-  document.title = `${VIEWS[id].title} · Allure`;
+  document.title = `${VIEWS[id].title} · Cadence`;
   VIEWS[id].show();
   write(VIEW_KEY, id);
   if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
