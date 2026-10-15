@@ -113,7 +113,7 @@ function measureRow(v, id) {
 }
 
 /* ---------- Prise de mensurations (mannequin) ---------- */
-function openMeasureSheet(row = null) {
+export function openMeasureSheet(row = null) {
   const form = $('#measureForm');
   clearErrors(form);
   const rows = state.bodyMetrics.measurements;

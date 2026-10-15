@@ -6,7 +6,7 @@
    À l'installation, l'app-shell (HTML/CSS/JS/icônes) est aussi pré-mis en cache :
    un tout premier lancement hors ligne (avant toute visite en ligne réussie)
    affiche donc l'app au lieu d'un écran blanc. */
-const CACHE = 'allure-v10';
+const CACHE = 'allure-v11';
 
 const PRECACHE_URLS = [
   './',
@@ -18,6 +18,7 @@ const PRECACHE_URLS = [
   './css/layout.css',
   './css/allure.css',
   './css/views/season.css',
+  './css/views/zoom.css',
   './css/views/metrics.css',
   './css/views/races.css',
   './js/main.js',
@@ -34,6 +35,7 @@ const PRECACHE_URLS = [
   './js/views/season.js',
   './js/views/races.js',
   './js/views/metrics.js',
+  './js/views/zoom.js',
   './js/features/ics.js',
   './js/features/body-map.js',
   './js/features/persist.js',

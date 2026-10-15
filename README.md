@@ -1,6 +1,15 @@
 # Allure
 
-App sport (PWA installable sur iPhone) : **Courses**, **Saison** (phases d'entraînement) et **Mesures** (poids, FTP vélo, mensurations).
+App sport (PWA installable sur iPhone) : courses, phases d'entraînement et mesures (poids, FTP vélo, mensurations).
+
+## Navigation : Zoom
+Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **Semaine**, **Jour**) ou d'un geste : écarter deux doigts plonge vers l'endroit touché, pincer recule (sur ordinateur : pincement du trackpad). Toucher un mois, une semaine (S…) ou un jour l'ouvre ; ‹ › change de période, « Aujourd'hui » y revient.
+- **Année** : le bilan (une barre par mois, colorée par les phases, un point par mois avec course ; courses, à venir, terminées, km, € d'inscriptions ; répartition par sport ; liste des courses avec résultat ou J−).
+- **Mois** : phase en cours et prochaine course (mois courant), jours colorés par phase, course en noir, aujourd'hui entouré ; phases du mois (modifier, supprimer) et courses.
+- **Semaine** : conseil de la phase, une ligne par jour.
+- **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
+
+Barre du bas : **Saison** (le zoom), **Corps** (poids, FTP, mensurations) et **Ajouter** (course, phase, poids, test FTP, mensurations). Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 
 ## Compte
@@ -43,12 +52,12 @@ Icône **Sommet** (`icon.svg`, déclinée en PNG).
 
 ## Structure
 ```
-index.html          3 onglets, écran de connexion, feuilles de saisie et Réglages
+index.html          vue Zoom, Corps, barre du bas, connexion, feuilles de saisie et Réglages
 css/                jetons, composants, vues, allure.css (style, palettes, connexion)
 js/core/            store (3 tranches), schéma, saison, dates
 js/services/        Firebase (compte, synchro par tranche, migration), stockage local
 js/ui/              thème, connexion, modales, pastille de synchro, toasts
-js/views/           races, season, metrics
+js/views/           zoom (calendrier 4 échelles), races et season (éditeurs), metrics (Corps)
 js/features/        export calendrier .ics, mannequin des mensurations
 ```
 

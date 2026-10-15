@@ -1,6 +1,6 @@
-/* Point d'entrée d'Allure : état, vues (Courses, Saison, Mesures), réglages, compte et synchronisation. */
+/* Point d'entrée d'Allure : état, vues (Saison en zoom, Corps), ajout, réglages, compte et synchronisation. */
 import { $, $$, debounce } from './core/utils.js';
-import { formatKey } from './core/dates.js';
+import { formatKey, todayKey } from './core/dates.js';
 import { loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, snapshot, resetLocal } from './core/store.js';
 import { initCloud, pushCloud, flushNow, clearPending, cloudState, currentUser, signOutUser, retryMigration, WAITING_MESSAGE } from './services/firebase.js';
 import { readText, write } from './services/storage.js';
@@ -11,25 +11,25 @@ import { renderStatus } from './ui/status.js';
 import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
-import { initRaces, renderRaces, tickCountdowns } from './views/races.js';
-import { initSeason, renderSeason } from './views/season.js';
-import { initMetrics, renderMetrics } from './views/metrics.js';
-import { PHASE_TYPES, phaseOn, racesOn } from './core/season.js';
+import { initRaces, openRaceEditor } from './views/races.js';
+import { initSeason, openPhaseEditor } from './views/season.js';
+import { initMetrics, renderMetrics, openMeasureSheet } from './views/metrics.js';
+import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
+import { state } from './core/store.js';
 
 const VIEWS = {
-  raceView: { title: 'Courses', show: renderRaces, slices: ['races'] },
-  seasonView: { title: 'Saison', show: renderSeason, slices: ['objectives', 'races'] },
-  metricsView: { title: 'Mesures', show: renderMetrics, slices: ['bodyMetrics'] }
+  zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
+  metricsView: { title: 'Corps', show: renderMetrics, slices: ['bodyMetrics'] }
 };
 const VIEW_KEY = 'allure_last_view';
 // uid du compte dont le nœud (migré) a déjà été reçu sur cet appareil ('1' : ancienne base publique).
 const SYNCED_KEY = 'allure_synced_once';
 // Dernier compte connecté sur cet appareil (changement de compte : données locales vidées).
 const LAST_UID = 'allure_last_uid';
-let currentView = 'raceView';
+let currentView = 'zoomView';
 
 function switchView(id, { scroll = true } = {}) {
-  if (!VIEWS[id]) id = 'raceView';
+  if (!VIEWS[id]) id = 'zoomView';
   currentView = id;
   $$('.view').forEach(v => (v.hidden = v.id !== id));
   $$('[data-view]').forEach(b => {
@@ -143,12 +143,37 @@ function canWrite() {
   return false;
 }
 
-/* Saison : un appui sur un jour du calendrier en donne le détail. */
-function describeDay(key) {
-  const p = phaseOn(key);
-  const races = racesOn(key);
-  const parts = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? PHASE_TYPES[p.type].name : 'Pas de phase', ...races.map(r => `🏁 ${r.name}`)];
-  toast(parts.join(' · '));
+/* ---------- Ajouter : course, phase, poids, FTP, mensurations ---------- */
+const fmtNum = (n, d) => Number(n).toFixed(d).replace('.', ',');
+
+function openAdd() {
+  const day = currentView === 'zoomView' ? zoomContextDay() : '';
+  const dayLabel = day ? formatKey(day, { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+  $('#addSub').textContent = day ? `Pour le ${dayLabel}` : '';
+  $('#addRaceSub').textContent = day ? `Le ${dayLabel}` : 'Nom, sport, date, distance';
+  $('#addPhaseSub').textContent = day ? `À partir du ${dayLabel}` : 'Enchaîne après la dernière phase';
+  const w = state.bodyMetrics.weight.at(-1);
+  const f = state.bodyMetrics.ftp.at(-1);
+  $('#addWeightSub').textContent = w ? `Dernier : ${fmtNum(w.value, 1)} kg` : 'Mesure du jour';
+  $('#addFtpSub').textContent = f ? `Dernier : ${fmtNum(f.value, 0)} W` : 'Puissance seuil vélo';
+  $('#addSheet').dataset.day = day;
+  openSheet('addSheet', { focus: false });
+}
+
+function onAddPick(e) {
+  const kind = e.target.closest('[data-add]')?.dataset.add;
+  if (!kind) return;
+  const day = $('#addSheet').dataset.day || '';
+  closeSheet('addSheet');
+  if (kind === 'race') return openRaceEditor(null, { date: day });
+  if (kind === 'phase') return openPhaseEditor(null, { start: day });
+  if (kind === 'measure') return openMeasureSheet();
+  // Poids et FTP : saisie rapide de l'écran Corps, date du jour proposée.
+  switchView('metricsView');
+  const form = $(kind === 'weight' ? '#weightForm' : '#ftpForm');
+  form.elements.date.value = day && day <= todayKey() ? day : todayKey();
+  form.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => form.elements.value.focus({ preventScroll: true }), 250);
 }
 
 function initGlobalErrors() {
@@ -172,15 +197,17 @@ function init() {
 
   initDialogs();
   initCalendarPrompt();
-  initRaces();
-  initSeason({ gotoDay: describeDay });
+  initRaces({ saved: race => currentView === 'zoomView' && showDay(race.date) });
+  initSeason();
   initMetrics();
+  initZoom();
+  $('#addBtn').addEventListener('click', openAdd);
+  $('#addList').addEventListener('click', onAddPick);
   subscribe(onStateChange);
 
   $$('[data-view]').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
-  switchView(readText(VIEW_KEY, 'raceView'), { scroll: false });
+  switchView(readText(VIEW_KEY, 'zoomView'), { scroll: false });
 
-  setInterval(() => currentView === 'raceView' && tickCountdowns(), 30000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
     else {

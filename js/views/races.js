@@ -1,33 +1,26 @@
-/* Vue Courses : prochaine échéance, calendrier, bilan annuel, historique. */
-import { $, esc, uid, parseNumber, round } from '../core/utils.js';
-import { combine, countdown, formatDate, parseDuration } from '../core/dates.js';
+/* Courses : éditeur, export calendrier, suppression et résultat (affichage dans la vue Zoom). */
+import { $, esc, uid, parseNumber } from '../core/utils.js';
+import { combine, parseDuration } from '../core/dates.js';
 import { state, commit } from '../core/store.js';
 import { RACE_SPORTS } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
-import { icon } from '../ui/icons.js';
-import { renderDonut } from '../ui/charts.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
 
-let viewYear = new Date().getFullYear();
-let silentNext = false;
-let showAllUpcoming = false;
-const UPCOMING_PREVIEW = 3;
+let onSaved = () => {};
 
-const startOf = r => combine(r.date, r.time, '00:00');
-const isUpcoming = (r, now = new Date()) => startOf(r) > now;
-const yearOf = r => Number(r.date.slice(0, 4));
-const sorted = () => [...state.races].sort((a, b) => startOf(a) - startOf(b));
+export const startOf = r => combine(r.date, r.time, '00:00');
+export const isUpcoming = (r, now = new Date()) => startOf(r) > now;
+export const sortedRaces = () => [...state.races].sort((a, b) => startOf(a) - startOf(b));
 
-function sportFamily(sport) {
+export function sportFamily(sport) {
   if (['Cyclisme', 'Gravel', 'VTT'].includes(sport)) return 'Vélo';
   if (['Ski de fond', 'Ski-roue'].includes(sport)) return 'Ski';
   return sport || 'Autre';
 }
 
-const fmtDist = r => `${String(r.distance).replace('.', ',')} km`;
-const fmtElev = r => `${r.elevation} m`;
+export const fmtDist = r => `${String(r.distance).replace('.', ',')} km`;
 
 /* Durées saisies avec la roulette iOS (champ heure, 00:00 par défaut) et stockées en « 2h35 ». */
 const pad2 = n => String(n).padStart(2, '0');
@@ -41,32 +34,11 @@ export function fromWheel(value) {
   return `${h}h${pad2(m)}`;
 }
 /** Valeur à enregistrer : la roulette, sinon l'ancienne valeur si elle n'était pas convertible (ex. « 26h »). */
-const durationValue = input =>
+export const durationValue = input =>
   fromWheel(input.value) || ((!input.value || input.value === '00:00') && input.dataset.orig && !toWheel(input.dataset.orig) ? input.dataset.orig : '');
 /** La roulette part toujours de 00:00 ; 00:00 = non renseigné (affiché en grisé). */
-const wheelValue = v => toWheel(v) || '00:00';
-const zeroClass = v => (toWheel(v) ? '' : ' is-zero');
-
-/** Chiffres clés d'une course : seuls ceux qui sont renseignés sont affichés. */
-function statsHTML(r, cls) {
-  const items = [
-    r.distance !== '' ? [fmtDist(r), 'Distance'] : null,
-    r.elevation !== '' ? [fmtElev(r), 'Dénivelé'] : null,
-    r.target ? [esc(r.target), 'Objectif'] : null
-  ].filter(Boolean);
-  return items.length ? `<div class="${cls}">${items.map(([v, l]) => `<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>` : '';
-}
-const fmtWhen = r => {
-  const d = startOf(r);
-  const date = formatDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  return r.time ? `${date} · ${r.time}` : date;
-};
-
-function yearBounds() {
-  const current = new Date().getFullYear();
-  const years = state.races.map(yearOf).filter(Number.isFinite);
-  return { min: Math.min(current, ...years), max: Math.max(current, ...years) };
-}
+export const wheelValue = v => toWheel(v) || '00:00';
+export const zeroClass = v => (toWheel(v) ? '' : ' is-zero');
 
 /** Course -> événement iCalendar. */
 const toCalendarEvent = r => ({
@@ -88,132 +60,9 @@ const toCalendarEvent = r => ({
   alarmMinutes: r.time ? 60 : 0
 });
 
-/* ---------- Rendu ---------- */
-function renderHero(next) {
-  const host = $('#nextRace');
-  if (!next) {
-    host.innerHTML = `<div class="race-hero__kicker">Prochaine course</div><h2 class="race-hero__name">Aucune course programmée</h2><p class="race-hero__place">Ajoutez votre prochain objectif avec le bouton +.</p>`;
-    return;
-  }
-  host.innerHTML = `
-    <div class="race-hero__top"><div class="race-hero__kicker">Prochaine course</div><span class="badge badge--glass">${esc(next.sport)}</span></div>
-    <h2 class="race-hero__name">${esc(next.name)}</h2>
-    <p class="race-hero__place">${icon('pin', 14)} ${esc(next.location || 'Lieu non renseigné')}</p>
-    <p class="race-hero__place">${icon('calendar', 14)} ${fmtWhen(next)}</p>
-    <div class="race-hero__countdown"><span>Départ dans</span><strong data-countdown="${esc(next.id)}">${countdown(startOf(next)) || 'Maintenant'}</strong></div>
-    ${statsHTML(next, 'race-hero__meta')}
-    <div class="race-hero__actions" data-id="${esc(next.id)}">
-      <button type="button" class="btn btn--glass btn--sm" data-action="calendar">${icon('calendarPlus', 16)}<span>Ajouter au calendrier</span></button>
-      <div class="row-actions">
-        <button type="button" class="icon-btn race-hero__icon" data-action="edit" aria-label="Modifier ${esc(next.name)}">${icon('edit', 18)}</button>
-        <button type="button" class="icon-btn race-hero__icon" data-action="delete" aria-label="Supprimer ${esc(next.name)}">${icon('trash', 18)}</button>
-      </div>
-    </div>`;
-}
-
-function raceCard(r, now) {
-  const past = !isUpcoming(r, now);
-  return `<article class="race-card ${past ? 'is-past' : ''}" data-id="${esc(r.id)}">
-    <header class="race-card__head">
-      <div><h3 class="race-card__name">${esc(r.name)}</h3><p class="race-card__when">${fmtWhen(r)}</p>${r.location ? `<p class="race-card__place">${icon('pin', 13)} ${esc(r.location)}</p>` : ''}</div>
-      <span class="badge">${esc(r.sport)}</span>
-    </header>
-    ${statsHTML(r, 'race-card__stats')}
-    ${r.notes ? `<p class="race-card__notes">${esc(r.notes)}</p>` : ''}
-    ${
-      past
-        ? `<div class="race-result"><div class="race-result__title">Résultat</div><div class="race-result__grid">
-        <label class="mini-field"><span>Temps réalisé</span><input class="input input--center input--wheel${zeroClass(r.resultTime)}" type="time" data-result="resultTime" data-orig="${esc(r.resultTime)}" value="${wheelValue(r.resultTime)}"></label>
-        <label class="mini-field"><span>Classement</span><input class="input input--center" data-result="resultRank" maxlength="40" inputmode="numeric" value="${esc(r.resultRank)}"></label>
-        <label class="mini-field"><span>Distance (km)</span><input class="input input--center" data-result="resultDistance" maxlength="40" inputmode="decimal" value="${esc(r.resultDistance)}"></label>
-      </div></div>`
-        : ''
-    }
-    <footer class="race-card__foot">
-      <span class="race-card__countdown">${past ? 'Course terminée' : `Départ dans <strong data-countdown="${esc(r.id)}">${countdown(startOf(r), now)}</strong>`}</span>
-      <div class="row-actions">
-        ${past ? '' : `<button type="button" class="icon-btn" data-action="calendar" aria-label="Ajouter au calendrier">${icon('calendarPlus', 18)}</button>`}
-        <button type="button" class="icon-btn" data-action="edit" aria-label="Modifier">${icon('edit', 18)}</button>
-        <button type="button" class="icon-btn icon-btn--danger" data-action="delete" aria-label="Supprimer">${icon('trash', 18)}</button>
-      </div>
-    </footer>
-  </article>`;
-}
-
-function renderStats(now) {
-  const { min, max } = yearBounds();
-  viewYear = Math.min(max, Math.max(min, viewYear));
-  const yearRaces = state.races.filter(r => yearOf(r) === viewYear);
-  const upcoming = yearRaces.filter(r => isUpcoming(r, now)).length;
-  const cost = yearRaces.reduce((s, r) => s + (parseNumber(r.price) || 0), 0);
-  const km = yearRaces.reduce((s, r) => s + (parseNumber(r.distance) || 0), 0);
-  $('#raceYear').textContent = String(viewYear);
-  $('#raceYearPrev').disabled = viewYear <= min;
-  $('#raceYearNext').disabled = viewYear >= max;
-  $('#raceYearReset').hidden = viewYear === new Date().getFullYear();
-  $('#raceStatsGrid').innerHTML = [
-    [yearRaces.length, 'courses'],
-    [upcoming, 'à venir'],
-    [yearRaces.length - upcoming, 'terminées'],
-    [`${round(km, 0).toLocaleString('fr-FR')} km`, 'distance'],
-    [`${round(cost, 2).toLocaleString('fr-FR')} €`, 'inscriptions']
-  ]
-    .map(([v, l]) => `<div class="stat"><strong>${esc(v)}</strong><span>${l}</span></div>`)
-    .join('');
-  const counts = {};
-  yearRaces.forEach(r => {
-    const f = sportFamily(r.sport);
-    counts[f] = (counts[f] || 0) + 1;
-  });
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'));
-  renderDonut({ donut: $('#raceDonut'), legend: $('#raceLegend'), total: $('#raceDonutTotal') }, entries, 'Aucune course cette année.');
-
-  const pastYear = sorted()
-    .filter(r => !isUpcoming(r, now) && yearOf(r) === viewYear)
-    .reverse();
-  $('#raceHistoryYear').textContent = String(viewYear);
-  $('#raceHistoryList').innerHTML = pastYear.map(r => raceCard(r, now)).join('');
-  $('#raceHistoryList').closest('.section').hidden = !pastYear.length;
-}
-
-export function renderRaces() {
-  if (silentNext) {
-    silentNext = false;
-    return;
-  }
-  const now = new Date();
-  const list = sorted();
-  const upcoming = list.filter(r => isUpcoming(r, now));
-  // La prochaine course n'apparaît que dans l'encadré du haut : la liste commence à la suivante.
-  const [next, ...later] = upcoming;
-  renderHero(next);
-  const shown = showAllUpcoming ? later : later.slice(0, UPCOMING_PREVIEW);
-  $('#raceUpcomingList').innerHTML = shown.map(r => raceCard(r, now)).join('');
-  const more = $('#raceMore');
-  more.hidden = later.length <= UPCOMING_PREVIEW;
-  more.setAttribute('aria-expanded', String(showAllUpcoming));
-  more.innerHTML = showAllUpcoming
-    ? `${icon('chevronUp', 18)}<span>Réduire</span>`
-    : `${icon('chevronDown', 18)}<span>Développer (${later.length - UPCOMING_PREVIEW} de plus)</span>`;
-  renderStats(now);
-}
-
-/** Met à jour uniquement les comptes à rebours (pas de re-rendu : les saisies restent intactes). */
-export function tickCountdowns() {
-  const now = new Date();
-  let crossed = false;
-  document.querySelectorAll('#raceView [data-countdown]').forEach(el => {
-    const r = state.races.find(x => x.id === el.dataset.countdown);
-    if (!r) return;
-    const text = countdown(startOf(r), now);
-    if (!text) crossed = true;
-    else el.textContent = text;
-  });
-  if (crossed && !document.activeElement?.closest('#raceView')) renderRaces();
-}
-
 /* ---------- Formulaire ---------- */
-function openEditor(id = null) {
+/** Ouvre l'éditeur : course existante (`id`) ou nouvelle course, à la date `date` si fournie. */
+export function openRaceEditor(id = null, { date = '' } = {}) {
   const r = id ? state.races.find(x => x.id === id) : null;
   if (id && !r) return toastError('Cette course n’existe plus.');
   const form = $('#raceForm');
@@ -224,6 +73,7 @@ function openEditor(id = null) {
   if (r) ['name', 'sport', 'date', 'time', 'location', 'distance', 'elevation', 'price', 'notes'].forEach(k => (form.elements[k].value = r[k] ?? ''));
   // Nouvelle course : sport de la dernière course saisie, un choix de moins à faire.
   else if (state.races.length) form.elements.sport.value = [...state.races].sort((a, b) => a.date.localeCompare(b.date)).at(-1).sport;
+  if (!r && date) form.elements.date.value = date;
   form.elements.target.value = wheelValue(r?.target);
   form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';
@@ -267,35 +117,17 @@ function onSubmit(e) {
   };
   if (existing) state.races[state.races.indexOf(existing)] = race;
   else state.races.push(race);
-  viewYear = yearOf(race);
   if (commit('races') === false) return;
   closeSheet('raceSheet');
   toast(existing ? 'Course modifiée' : 'Course ajoutée');
+  onSaved(race);
 }
 
-async function onClick(e) {
-  const btn = e.target.closest('[data-action]');
-  if (!btn) return;
-  const action = btn.dataset.action;
-  if (action === 'add') return openEditor();
-  if (action === 'toggle-upcoming') {
-    showAllUpcoming = !showAllUpcoming;
-    renderRaces();
-    if (!showAllUpcoming) $('#raceUpcomingList').closest('.section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-  if (action === 'year-prev' || action === 'year-next') {
-    viewYear += action === 'year-prev' ? -1 : 1;
-    return renderStats(new Date());
-  }
-  if (action === 'year-reset') {
-    viewYear = new Date().getFullYear();
-    return renderStats(new Date());
-  }
-  const id = btn.dataset.id || btn.closest('[data-id]')?.dataset.id;
+/** Calendrier, modification ou suppression d'une course. */
+export async function raceAction(action, id) {
   const r = state.races.find(x => x.id === id);
-  if (!r) return;
-  if (action === 'edit') openEditor(id);
+  if (!r) return toastError('Cette course n’existe plus.');
+  if (action === 'edit') openRaceEditor(id);
   else if (action === 'calendar') offerCalendar(toCalendarEvent(r), { heading: 'Ajouter la course au calendrier ?' });
   else if (action === 'delete') {
     if (await confirmDialog({ title: `Supprimer « ${r.name} » ?`, message: 'Cette action est définitive.', confirmLabel: 'Supprimer', danger: true })) {
@@ -306,33 +138,30 @@ async function onClick(e) {
   }
 }
 
-function onResultChange(e) {
-  const field = e.target.dataset.result;
-  const r = state.races.find(x => x.id === e.target.closest('[data-id]')?.dataset.id);
-  if (!field || !r) return;
-  r[field] = field === 'resultTime' ? durationValue(e.target) : e.target.value.trim().slice(0, 40);
-  if (field === 'resultTime') e.target.dataset.orig = r[field];
-  silentNext = true; // pas de re-rendu : on garde le focus dans la saisie
-  if (commit('races') === false) {
-    silentNext = false;
-    return renderRaces();
-  }
+/**
+ * Résultat saisi sur une course passée (temps, classement, distance).
+ * @returns {boolean} faux si l'enregistrement a été refusé.
+ */
+export function saveResult(input, id) {
+  const field = input.dataset.result;
+  const r = state.races.find(x => x.id === id);
+  if (!field || !r) return false;
+  r[field] = field === 'resultTime' ? durationValue(input) : input.value.trim().slice(0, 40);
+  if (field === 'resultTime') input.dataset.orig = r[field];
+  if (commit('races') === false) return false;
   toast('Résultat enregistré');
+  return true;
 }
 
 /* Roulette : grisée tant qu'elle est sur 00:00. */
-function wheelState(e) {
+export function wheelState(e) {
   const input = e.target;
   if (input.matches?.('.input--wheel')) input.classList.toggle('is-zero', !input.value || input.value === '00:00');
 }
 
-export function initRaces() {
-  const view = $('#raceView');
-  [view, $('#raceForm')].forEach(el => {
-    el.addEventListener('input', wheelState);
-  });
-  view.addEventListener('click', onClick);
-  view.addEventListener('change', onResultChange);
+export function initRaces({ saved } = {}) {
+  if (saved) onSaved = saved;
+  $('#raceForm').addEventListener('input', wheelState);
   $('#raceForm').addEventListener('submit', onSubmit);
   $('#raceSport').innerHTML = `<option value="" disabled selected>Choisir un sport</option>${RACE_SPORTS.map(s => `<option>${esc(s)}</option>`).join('')}`;
 }
