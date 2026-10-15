@@ -3,13 +3,13 @@
 App sport (PWA installable sur iPhone) : courses, phases d'entraînement et mesures (poids, FTP vélo, mensurations).
 
 ## Navigation : Zoom
-Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **Semaine**, **Jour**) ou d'un geste : écarter deux doigts plonge vers l'endroit touché, pincer recule (sur ordinateur : pincement du trackpad). Toucher un mois, une semaine (S…) ou un jour l'ouvre ; ‹ › change de période, « Aujourd'hui » y revient.
+Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **Semaine**, **Jour**) ou d'un geste : écarter deux doigts plonge vers l'endroit touché, pincer recule (sur ordinateur : pincement du trackpad). Toucher un mois, une semaine (S…) ou un jour l'ouvre ; glisser à gauche / à droite (ou ‹ ›, ou glissement horizontal au trackpad) passe à l'année, au mois, à la semaine ou au jour suivant / précédent ; « Aujourd'hui » y revient.
 - **Année** : le bilan (une barre par mois, colorée par les phases, un point par mois avec course ; courses, à venir, terminées, km, € d'inscriptions ; répartition par sport ; liste des courses avec résultat ou J−).
 - **Mois** : phase en cours et prochaine course (mois courant), jours colorés par phase, course en noir, aujourd'hui entouré ; phases du mois (modifier, supprimer) et courses.
 - **Semaine** : conseil de la phase, une ligne par jour.
 - **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
 
-Barre du bas : **Saison** (le zoom), **Corps** (poids, FTP, mensurations) et **Ajouter** (course, phase, poids, test FTP, mensurations). Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+Barre du bas : **Saison** (le zoom), **Corps** (courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 
 ## Compte
@@ -47,7 +47,7 @@ Aucune règle à publier : le projet `test-e27e9` autorise déjà chaque compte 
 `database.rules.json` contient désormais le **verrou de l'ancienne base publique** `dashboard---projet` (`.read` / `.write` à `false`), identique à celui du dépôt Carnet : à publier dans la console Firebase de `dashboard---projet` une fois que Carnet et Allure ont migré les données sur tous les appareils. Ne jamais republier l'ancienne version de ce fichier (base lisible et modifiable par n'importe qui).
 
 ## Apparence
-Style minimaliste (anthracite, cartes pleines), couleurs **Aurore** (dégradé violet → rose → orange). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
+Style minimaliste (anthracite, cartes pleines), couleur **Braise** (dégradé orangé → rouge vif), également couleur des courses dans le calendrier ; chaque type de phase a sa propre teinte franche (bleu, indigo, violet, magenta, jaune, vert, gris). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
 Icône **Sommet** (`icon.svg`, déclinée en PNG).
 
 ## Structure
