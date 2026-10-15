@@ -1,6 +1,6 @@
 /*
  * Configuration Firebase (application Web) du projet commun à toutes les apps
- * (Mon Garage, Ma Maison, Carnet, Allure, Mon budget).
+ * (Mon Garage, Ma Maison, Carnet, Cadence, Mon budget).
  * Ces valeurs ne sont pas des secrets : elles sont publiques par conception.
  * Les données sont protégées par l'authentification et les règles du projet
  * (chaque compte ne voit que ses propres données : users/<uid>).
