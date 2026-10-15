@@ -61,7 +61,7 @@ function renderCompare() {
   const rows = state.bodyMetrics.measurements;
   const host = $('#measureCompare');
   if (!rows.length) {
-    host.innerHTML = '<p class="chart-empty">Aucune prise de mensurations pour le moment.</p>';
+    host.innerHTML = '<p class="chart-empty">Aucune prise de mensurations. Touchez Ajouter pour en saisir une.</p>';
     return;
   }
   const latest = rows.length - 1;
@@ -84,10 +84,6 @@ function renderCompare() {
 }
 
 export function renderMetrics() {
-  ['weightForm', 'ftpForm'].forEach(id => {
-    const input = $(`#${id}`).elements.date;
-    if (!input.value) input.value = todayKey();
-  });
   renderSeries('weight');
   renderSeries('ftp');
   renderCompare();
@@ -155,12 +151,26 @@ function onAdd(e) {
     state.bodyMetrics[kind].sort(byDate);
     offsets[kind] = 0;
   }
-  clearErrors(form);
-  const date = form.elements.date.value;
-  form.reset();
-  form.elements.date.value = date;
   if (commit('bodyMetrics') === false) return;
-  toast('Mesure enregistrée');
+  closeSheet('valueSheet');
+  toast(kind === 'weight' ? 'Poids enregistré' : 'Test FTP enregistré');
+}
+
+/* ---------- Poids ou FTP : saisie depuis « Ajouter » ---------- */
+export function openValueSheet(kind, date = todayKey()) {
+  const cfg = SERIES[kind];
+  const form = $('#valueForm');
+  form.reset();
+  clearErrors(form);
+  form.dataset.kind = kind;
+  $('#valueTitle').textContent = kind === 'weight' ? 'Poids' : 'Test FTP';
+  $('#valueLabel').textContent = `${cfg.label} · ${cfg.unit}`;
+  const last = state.bodyMetrics[kind].at(-1);
+  $('#valueSub').textContent = last ? `Dernière mesure : ${fmt(last.value, cfg.decimals)} ${cfg.unit}, le ${formatKey(last.date, { day: 'numeric', month: 'long' })}` : 'Première mesure';
+  form.elements.date.value = date;
+  form.elements.value.placeholder = last ? fmt(last.value, cfg.decimals) : kind === 'weight' ? '72,5' : '250';
+  form.elements.value.inputMode = kind === 'weight' ? 'decimal' : 'numeric';
+  openSheet('valueSheet');
 }
 
 /* ---------- Historique ---------- */
@@ -277,6 +287,7 @@ export function initMetrics() {
       renderCompare();
     }
   });
+  $('#valueSheet').addEventListener('submit', onAdd);
   const measureSheet = $('#measureSheet');
   measureSheet.addEventListener('submit', onAdd);
   bindBodyMap(measureSheet);

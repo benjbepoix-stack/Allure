@@ -13,7 +13,7 @@ import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initRaces, openRaceEditor } from './views/races.js';
 import { initSeason, openPhaseEditor } from './views/season.js';
-import { initMetrics, renderMetrics, openMeasureSheet } from './views/metrics.js';
+import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { state } from './core/store.js';
 
@@ -168,12 +168,8 @@ function onAddPick(e) {
   if (kind === 'race') return openRaceEditor(null, { date: day });
   if (kind === 'phase') return openPhaseEditor(null, { start: day });
   if (kind === 'measure') return openMeasureSheet();
-  // Poids et FTP : saisie rapide de l'écran Corps, date du jour proposée.
-  switchView('metricsView');
-  const form = $(kind === 'weight' ? '#weightForm' : '#ftpForm');
-  form.elements.date.value = day && day <= todayKey() ? day : todayKey();
-  form.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  setTimeout(() => form.elements.value.focus({ preventScroll: true }), 250);
+  // Poids et FTP : feuille de saisie, date du jour affiché si elle n'est pas dans le futur.
+  openValueSheet(kind, day && day <= todayKey() ? day : todayKey());
 }
 
 function initGlobalErrors() {

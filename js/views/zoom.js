@@ -20,7 +20,7 @@ import { openPhaseEditor, deletePhase } from './season.js';
 
 export const LEVELS = ['Année', 'Mois', 'Semaine', 'Jour'];
 const LEVEL_KEY = 'allure_zoom_level';
-const HINTS = ['Touchez un mois pour l’ouvrir', 'Touchez un jour, ou S… pour la semaine', 'Touchez un jour pour sa fiche', 'Pincez ou touchez Semaine pour reculer'];
+const HINTS = ['Glissez pour changer d’année', 'Glissez pour changer de mois', 'Glissez pour changer de semaine', 'Glissez pour changer de jour'];
 const NAV_LABELS = [['Année précédente', 'Année suivante'], ['Mois précédent', 'Mois suivant'], ['Semaine précédente', 'Semaine suivante'], ['Jour précédent', 'Jour suivant']];
 /* Charge relative d'un jour selon sa phase : hauteur des barres de l'année. */
 const LOAD = { base: 0.5, buildVolume: 0.85, buildIntensity: 0.95, buildRace: 0.9, build: 0.9, taper: 0.6, recovery: 0.3, transition: 0.2 };
@@ -307,7 +307,7 @@ function dayHTML() {
 /* ---------- Rendu et transitions ---------- */
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function renderZoom({ dir = 0, origin = null } = {}) {
+export function renderZoom({ dir = 0, origin = null, slide = 0 } = {}) {
   if (silentNext) {
     silentNext = false;
     return;
@@ -323,6 +323,13 @@ export function renderZoom({ dir = 0, origin = null } = {}) {
   $('#zoomToday').hidden = showsToday();
   $('#zoomPrev').setAttribute('aria-label', NAV_LABELS[level][0]);
   $('#zoomNext').setAttribute('aria-label', NAV_LABELS[level][1]);
+  if (slide) {
+    body.style.transform = '';
+    body.classList.remove('is-zoom-in', 'is-zoom-out', 'is-slide-next', 'is-slide-prev', 'is-fade');
+    void body.offsetWidth;
+    body.classList.add(reduceMotion() ? 'is-fade' : slide > 0 ? 'is-slide-next' : 'is-slide-prev');
+    return;
+  }
   if (!dir) return;
   if (origin) {
     const r = body.getBoundingClientRect();
@@ -351,7 +358,7 @@ function shift(n) {
   else focus = dateKey(addDays(d, n * (level === 2 ? 7 : 1)));
   // En revenant sur la période en cours, on se recale sur aujourd'hui.
   if (level < 3 && showsTodayFor(focus)) focus = todayKey();
-  renderZoom();
+  renderZoom({ slide: n });
 }
 
 function showsTodayFor(key) {
@@ -469,11 +476,74 @@ function bindPinch(body) {
   body.addEventListener('touchend', () => (start = 0));
 }
 
+/* ---------- Glisser à gauche / à droite : période suivante / précédente ---------- */
+function bindSwipe(body) {
+  // Doigt : le contenu suit le doigt, puis on change de période au-delà d'un seuil.
+  let s = null;
+  body.addEventListener(
+    'touchstart',
+    e => {
+      if (e.touches.length !== 1 || e.target.closest('input, textarea, select')) {
+        s = null;
+        return;
+      }
+      s = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), axis: null, dx: 0 };
+    },
+    { passive: true }
+  );
+  body.addEventListener(
+    'touchmove',
+    e => {
+      if (!s || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - s.x;
+      const dy = e.touches[0].clientY - s.y;
+      if (!s.axis && Math.hypot(dx, dy) > 10) s.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+      if (s.axis !== 'x') return;
+      e.preventDefault();
+      s.dx = dx;
+      if (!reduceMotion()) body.style.transform = `translateX(${dx}px)`;
+    },
+    { passive: false }
+  );
+  const end = () => {
+    if (!s) return;
+    const { axis, dx, t } = s;
+    s = null;
+    if (axis !== 'x') return;
+    const fast = Math.abs(dx) / Math.max(1, Date.now() - t) > 0.5;
+    if (Math.abs(dx) > 70 || (fast && Math.abs(dx) > 30)) shift(dx < 0 ? 1 : -1);
+    else {
+      body.style.transition = 'transform 220ms var(--ease)';
+      body.style.transform = '';
+      setTimeout(() => (body.style.transition = ''), 240);
+    }
+  };
+  body.addEventListener('touchend', end);
+  body.addEventListener('touchcancel', end);
+  // Trackpad : glissement horizontal à deux doigts.
+  let acc = 0;
+  let lock = 0;
+  body.addEventListener(
+    'wheel',
+    e => {
+      if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      if (Date.now() < lock) return;
+      acc += e.deltaX;
+      if (Math.abs(acc) < 60) return;
+      shift(acc > 0 ? 1 : -1);
+      acc = 0;
+      lock = Date.now() + 600;
+    },
+    { passive: false }
+  );
+}
+
 export function initZoom() {
   const saved = Number(readText(LEVEL_KEY, '1'));
   level = Number.isInteger(saved) && saved >= 0 && saved <= 3 ? saved : 1;
   const body = $('#zoomBody');
-  body.addEventListener('animationend', () => body.classList.remove('is-zoom-in', 'is-zoom-out', 'is-fade'));
+  body.addEventListener('animationend', () => body.classList.remove('is-zoom-in', 'is-zoom-out', 'is-slide-next', 'is-slide-prev', 'is-fade'));
   body.addEventListener('click', e => {
     const act = e.target.closest('[data-act]');
     if (act) {
@@ -513,4 +583,5 @@ export function initZoom() {
     renderZoom({ dir: 1 });
   });
   bindPinch(body);
+  bindSwipe(body);
 }

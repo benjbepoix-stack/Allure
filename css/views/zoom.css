@@ -68,7 +68,11 @@
 body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 
 /* ---------- Transitions : on plonge depuis l'endroit touché ---------- */
-.zbody { touch-action: pan-x pan-y; }
+.zbody { touch-action: pan-y; }
+.zbody.is-slide-next { animation: slide-next 300ms var(--ease) both; }
+.zbody.is-slide-prev { animation: slide-prev 300ms var(--ease) both; }
+@keyframes slide-next { from { opacity: 0; transform: translateX(48px); } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(-48px); } }
 .zbody.is-zoom-in { animation: zoom-in 340ms var(--ease) both; }
 .zbody.is-zoom-out { animation: zoom-out 340ms var(--ease) both; }
 .zbody.is-fade { animation: zoom-fade 160ms linear both; }
@@ -86,7 +90,7 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 .zbar:active { transform: scale(.94); }
 .zbar__fill { display: flex; flex-direction: column-reverse; width: 100%; min-height: 6px; border-radius: 7px 7px 4px 4px; overflow: hidden; background: var(--surface-3); }
 .zbar__fill i { display: block; background: var(--ph); min-height: 2px; }
-.zbar__race { position: absolute; left: 50%; top: -2px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--text); }
+.zbar__race { position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--race); box-shadow: 0 0 0 2.5px var(--bg); }
 .zbar.is-now { outline: 2px solid var(--text); outline-offset: 3px; }
 .zbar:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .zyear__months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 5px; margin-top: 8px; font-size: 10.5px; font-weight: 700; color: var(--text-3); text-align: center; text-transform: uppercase; }
@@ -101,14 +105,14 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 .zlist--next { margin-top: var(--sp-3); }
 .zrow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: var(--r-md); background: var(--surface); text-align: left; transition: transform var(--dur-fast) var(--ease); }
 .zrow:active { transform: scale(.985); }
-.zrow__flag { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--surface-2); color: var(--accent); flex: none; }
+.zrow__flag { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--race); color: var(--race-ink); flex: none; }
 .zrow__body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .zrow__body strong { font-size: var(--fs-sm); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zrow__body > span { font-size: 11.5px; color: var(--text-2); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zrow__end { font-size: var(--fs-sm); font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .zrow__end.is-count { background: var(--gradient-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-.zphase { display: flex; align-items: center; gap: 2px; padding-right: 6px; border-radius: var(--r-md); background: var(--surface); }
+.zphase { display: flex; align-items: center; gap: 2px; padding-right: 6px; border-radius: var(--r-md); background: var(--surface); box-shadow: inset 5px 0 0 var(--ph); }
 .zphase__main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 11px 6px 11px 14px; text-align: left; }
 .zphase .phase-dot { width: 12px; height: 12px; border-radius: 4px; }
 
@@ -119,16 +123,17 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 .znow strong { font-size: var(--fs-lg); font-weight: 850; letter-spacing: -.02em; }
 .znow__race { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
 .znow__race b { color: var(--text); font-weight: 850; }
-.znow__race .icon { color: var(--accent); }
+.znow__race .icon { color: var(--race); }
 
 .zcal { display: grid; grid-template-columns: 30px repeat(7, minmax(0, 1fr)); gap: 5px; }
 .zcal__dh { font-size: 10.5px; font-weight: 750; color: var(--text-3); text-align: center; padding-bottom: 2px; }
 .zcal__wk { font-size: 9.5px; font-weight: 750; color: var(--text-3); border-radius: 8px; background: var(--surface-2); font-variant-numeric: tabular-nums; }
 .zcal__d { aspect-ratio: 1; border-radius: 11px; background: var(--surface); color: var(--text-2); font-size: var(--fs-sm); font-weight: 750; font-variant-numeric: tabular-nums; transition: transform var(--dur-fast) var(--ease); }
-.zcal__d[class*="phase--"] { background: var(--ph); color: #fff; }
-.zcal__d.phase--transition { color: var(--bg); }
+.zcal__d[class*="phase--"] { background: var(--ph); color: var(--ph-ink); }
 .zcal__d.is-out { opacity: .35; }
-.zcal__d.is-race { background: var(--text); color: var(--bg); }
+/* Jour de course : rouge, anneau et petit fanion, visible quelle que soit la phase. */
+.zcal__d.is-race { position: relative; background: var(--race); color: var(--race-ink); font-weight: 900; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--race); z-index: 1; }
+.zcal__d.is-race::after { content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 6px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .zcal__d.is-today { outline: 2.5px solid var(--text); outline-offset: 2px; }
 .zcal__d:active { transform: scale(.92); }
 .zcal__d:focus-visible, .zcal__wk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -143,16 +148,14 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 .zday__date span { font-size: 10.5px; font-weight: 750; color: var(--text-3); text-transform: uppercase; }
 .zday__date strong { font-size: var(--fs-xl); font-weight: 850; line-height: 1.1; }
 .zday.is-today .zday__date { box-shadow: inset 0 0 0 2px var(--text); }
-.zday__block { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 8px 14px; border-radius: var(--r-md); background: var(--ph-soft, var(--surface)); border-left: 4px solid var(--ph, transparent); }
-.zday__block strong { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 850; color: var(--ph, var(--text)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zday__block > span { font-size: 11.5px; color: var(--text-2); font-weight: 600; }
-.zday__block.is-race { background: var(--text); border-left-color: var(--text); }
-.zday__block.is-race strong { color: var(--bg); }
-.zday__block.is-race > span { color: color-mix(in srgb, var(--bg) 70%, transparent); }
-.zday__block.is-empty strong { color: var(--text-2); }
+.zday__block { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 8px 14px; border-radius: var(--r-md); background: var(--ph, var(--surface)); color: var(--ph-ink, var(--text)); }
+.zday__block strong { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zday__block > span { font-size: 11.5px; font-weight: 650; opacity: .85; }
+.zday__block.is-race { background: var(--race); color: var(--race-ink); box-shadow: 0 8px 20px -10px var(--race); }
+.zday__block.is-empty { color: var(--text-2); }
 
 /* ---------- Échelle Jour ---------- */
-.zrace { margin-bottom: var(--sp-3); padding: var(--sp-5); border-radius: var(--r-lg); background: var(--surface); position: relative; overflow: hidden; }
+.zrace { margin-bottom: var(--sp-3); padding: var(--sp-5); border-radius: var(--r-lg); background: color-mix(in srgb, var(--race) 9%, var(--surface)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--race) 45%, transparent); position: relative; overflow: hidden; }
 .zrace::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--gradient-accent); }
 .zrace__kicker { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
 .zrace__big { margin-top: 6px; font-size: clamp(40px, 13vw, 56px); font-weight: 900; letter-spacing: -.05em; line-height: 1; background: var(--gradient-accent); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
@@ -171,7 +174,7 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
 .zcard p { margin-top: 4px; font-size: var(--fs-sm); color: var(--text-2); }
 
 @media (prefers-reduced-motion: reduce) {
-  .zbody.is-zoom-in, .zbody.is-zoom-out { animation: zoom-fade 160ms linear both; }
+  .zbody.is-zoom-in, .zbody.is-zoom-out, .zbody.is-slide-next, .zbody.is-slide-prev { animation: zoom-fade 160ms linear both; }
 }
 @media (min-width: 900px) {
   .zyear { height: 220px; gap: 10px; }
@@ -179,3 +182,6 @@ body .topbar__title { font-size: clamp(22px, 7vw, var(--fs-2xl)); }
   .zcal { max-width: 640px; margin: 0 auto; }
   .stats-grid.zstats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+
+/* Clair : textes colorés par la phase assombris pour rester lisibles (jaune d'affûtage notamment). */
+:root[data-theme="light"] .znow__kicker, :root[data-theme="light"] .zadvice b, :root[data-theme="light"] .phase-now__kicker { color: color-mix(in srgb, var(--ph, var(--text-3)) 72%, #000); }
