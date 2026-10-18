@@ -12,14 +12,15 @@ import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initRaces, openRaceEditor } from './views/races.js';
-import { initSeason, openPhaseEditor, renderPhaseList } from './views/season.js';
+import { initSeason, openPhaseEditor } from './views/season.js';
+import { refreshPhaseTypes } from './views/phase-types.js';
 import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
-  metricsView: { title: 'Suivi', show: () => { renderPhaseList(); renderMetrics(); }, slices: ['objectives', 'bodyMetrics'] }
+  metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] }
 };
 const VIEW_KEY = 'allure_last_view';
 // uid du compte dont le nœud (migré) a déjà été reçu sur cet appareil ('1' : ancienne base publique).
@@ -46,6 +47,7 @@ function switchView(id, { scroll = true } = {}) {
 }
 
 function onStateChange(slices) {
+  if (slices.includes('objectives')) refreshPhaseTypes();
   const view = VIEWS[currentView];
   if (view.slices.some(s => slices.includes(s))) view.show();
 }

@@ -11,7 +11,9 @@ Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **
 - **Semaine** : conseil de la phase, une ligne par jour.
 - **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
 
-Barre du bas : **Saison** (le zoom), **Suivi** (toutes les phases d'entraînement, en cours et à venir puis terminées, avec Ajouter, Modifier et Supprimer ; courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+Types de phase : le menu « Phase » de l'éditeur (lien « Modifier la liste ») et ⚙︎ › Réglages ouvrent la liste des types : ajouter, renommer (nom et nom court), changer la couleur, la charge (hauteur des barres de l'année) et le conseil, classer dans « Préparation spécifique », réordonner ou retirer. Un type retiré qui sert encore à des phases est seulement masqué du menu : ces phases gardent leur nom et leur couleur.
+
+Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 
 ## Compte
@@ -27,6 +29,7 @@ Cadence utilise **le même compte que Mon Garage, Ma Maison, Carnet et Mon budge
 Cadence partage le nœud de Carnet **`users/<uid>/carnet`** et n'y lit / n'écrit que trois tranches :
 - `races` : courses ;
 - `objectives.seasonPhases` : phases de la saison ;
+- `objectives.phaseTypes` : liste des types de phase, si elle a été modifiée (sinon la liste d'origine) ;
 - `bodyMetrics` : poids, FTP, mensurations.
 
 Les autres données (agenda, tâches, planning de la semaine, `garage_alerts`, `maison_alerts`, marqueur `migrated`…) appartiennent à Carnet et aux autres apps et ne sont jamais réécrites. Une course ou une phase créée dans Cadence apparaît donc aussitôt dans le planning de Carnet.
@@ -49,7 +52,7 @@ Aucune règle à publier : le projet `test-e27e9` autorise déjà chaque compte 
 `database.rules.json` contient désormais le **verrou de l'ancienne base publique** `dashboard---projet` (`.read` / `.write` à `false`), identique à celui du dépôt Carnet : à publier dans la console Firebase de `dashboard---projet` une fois que Carnet et Cadence ont migré les données sur tous les appareils. Ne jamais republier l'ancienne version de ce fichier (base lisible et modifiable par n'importe qui).
 
 ## Apparence
-Style minimaliste (anthracite, cartes pleines), couleur **Braise** (dégradé orangé → rouge vif), également couleur des courses dans le calendrier ; chaque type de phase a sa propre teinte franche (bleu, indigo, violet, magenta, jaune, vert, gris). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
+Style minimaliste (anthracite, cartes pleines), couleur **Braise** (dégradé orangé → rouge vif), également couleur des courses dans le calendrier ; chaque type de phase a sa propre teinte franche (bleu, indigo, violet, magenta, jaune, vert, gris par défaut, modifiable). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
 Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) : trois barres qui montent comme la charge d'entraînement, la blanche pour la coupure avant la course.
 
 ## Structure
@@ -59,7 +62,7 @@ css/                jetons, composants, vues, allure.css (style, palettes, conne
 js/core/            store (3 tranches), schéma, saison, dates
 js/services/        Firebase (compte, synchro par tranche, migration), stockage local
 js/ui/              thème, connexion, modales, pastille de synchro, toasts
-js/views/           zoom (calendrier 4 échelles), races et season (éditeurs), metrics (Suivi)
+js/views/           zoom (calendrier 4 échelles), races, season et phase-types (éditeurs), metrics (Suivi)
 js/features/        export calendrier .ics, mannequin des mensurations
 ```
 
