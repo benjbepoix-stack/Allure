@@ -11,7 +11,7 @@ Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **
 - **Semaine** : conseil de la phase, une ligne par jour.
 - **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
 
-Barre du bas : **Saison** (le zoom), **Corps** (courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+Barre du bas : **Saison** (le zoom), **Suivi** (toutes les phases d'entraînement, en cours et à venir puis terminées, avec Ajouter, Modifier et Supprimer ; courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 
 ## Compte
@@ -54,12 +54,12 @@ Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) :
 
 ## Structure
 ```
-index.html          vue Zoom, Corps, barre du bas, connexion, feuilles de saisie et Réglages
+index.html          vue Zoom, Suivi, barre du bas, connexion, feuilles de saisie et Réglages
 css/                jetons, composants, vues, allure.css (style, palettes, connexion)
 js/core/            store (3 tranches), schéma, saison, dates
 js/services/        Firebase (compte, synchro par tranche, migration), stockage local
 js/ui/              thème, connexion, modales, pastille de synchro, toasts
-js/views/           zoom (calendrier 4 échelles), races et season (éditeurs), metrics (Corps)
+js/views/           zoom (calendrier 4 échelles), races et season (éditeurs), metrics (Suivi)
 js/features/        export calendrier .ics, mannequin des mensurations
 ```
 

@@ -1,4 +1,4 @@
-/* Point d'entrée d'Cadence : état, vues (Saison en zoom, Corps), ajout, réglages, compte et synchronisation. */
+/* Point d'entrée d'Cadence : état, vues (Saison en zoom, Suivi), ajout, réglages, compte et synchronisation. */
 import { $, $$, debounce } from './core/utils.js';
 import { formatKey, todayKey } from './core/dates.js';
 import { loadLocal, subscribe, applyRemote, setCloudSink, setWriteGuard, snapshot, resetLocal } from './core/store.js';
@@ -12,14 +12,14 @@ import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initRaces, openRaceEditor } from './views/races.js';
-import { initSeason, openPhaseEditor } from './views/season.js';
+import { initSeason, openPhaseEditor, renderPhaseList } from './views/season.js';
 import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
-  metricsView: { title: 'Corps', show: renderMetrics, slices: ['bodyMetrics'] }
+  metricsView: { title: 'Suivi', show: () => { renderPhaseList(); renderMetrics(); }, slices: ['objectives', 'bodyMetrics'] }
 };
 const VIEW_KEY = 'allure_last_view';
 // uid du compte dont le nœud (migré) a déjà été reçu sur cet appareil ('1' : ancienne base publique).
