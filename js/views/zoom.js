@@ -132,7 +132,7 @@ function yearHTML() {
     <div class="stats-grid zstats">${stats}</div>
     ${sportsHTML}
     <h2 class="zsec">Courses ${y}</h2>
-    ${list.length ? `<div class="zlist">${list.map(r => raceRow(r, now, { day: true })).join('')}</div>` : '<p class="zempty">Aucune course cette année. Touchez Ajouter pour en programmer une.</p>'}`;
+    ${list.length ? `<div class="zlist">${[...list].reverse().map(r => raceRow(r, now, { day: true })).join('')}</div>` : '<p class="zempty">Aucune course cette année. Touchez Ajouter pour en programmer une.</p>'}`;
 }
 
 function raceRow(r, now, { day = false } = {}) {
@@ -203,7 +203,7 @@ function monthHTML() {
     <div class="zcal" role="group" aria-label="${esc(zoomTitle())}"><span></span>${head}${cells.join('')}</div>
     <h2 class="zsec">Phases du mois</h2>
     ${inMonth.length ? `<div class="zlist">${phaseRows}</div>` : '<p class="zempty">Aucune phase ce mois-ci. Touchez Ajouter pour en planifier une.</p>'}
-    ${races.length ? `<h2 class="zsec">Courses</h2><div class="zlist">${races.map(r => raceRow(r, now)).join('')}</div>` : ''}`;
+    ${races.length ? `<h2 class="zsec">Courses</h2><div class="zlist">${[...races].reverse().map(r => raceRow(r, now)).join('')}</div>` : ''}`;
 }
 
 /* ---------- Échelle Semaine ---------- */
