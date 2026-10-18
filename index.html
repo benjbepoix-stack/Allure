@@ -100,8 +100,16 @@
       <div class="zbody" id="zoomBody" aria-live="polite"></div>
     </section>
 
-    <!-- ================= MESURES ================= -->
+    <!-- ================= SUIVI : phases et mesures ================= -->
     <section id="metricsView" class="view" hidden aria-labelledby="headerTitle">
+      <section class="card metric-card phases-card">
+        <header class="metric-card__head">
+          <div><h2 class="card__title">Phases d’entraînement</h2><p class="card__sub">Ajouter, modifier ou supprimer</p></div>
+          <button type="button" class="chip-btn" data-action="phase-add"><span data-icon="plus" data-size="14"></span> Ajouter</button>
+        </header>
+        <div id="phaseList"></div>
+      </section>
+
       <div class="metrics-grid">
         <section class="card metric-card">
           <header class="metric-card__head">
@@ -141,11 +149,11 @@
 
   </main>
 
-  <!-- Barre du bas : Saison (zoom) / Corps, et Ajouter -->
+  <!-- Barre du bas : Saison (zoom) / Suivi, et Ajouter -->
   <nav class="dock" aria-label="Navigation principale">
     <div class="dock__tabs">
       <button type="button" class="dock__tab is-active" data-view="zoomView" aria-current="page"><span data-icon="calendar" data-size="18"></span><span>Saison</span></button>
-      <button type="button" class="dock__tab" data-view="metricsView"><span data-icon="body" data-size="18"></span><span>Corps</span></button>
+      <button type="button" class="dock__tab" data-view="metricsView"><span data-icon="body" data-size="18"></span><span>Suivi</span></button>
     </div>
     <button type="button" class="btn btn--primary dock__add" id="addBtn"><span data-icon="plus" data-size="20"></span><span>Ajouter</span></button>
   </nav>

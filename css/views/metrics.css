@@ -67,3 +67,8 @@
 .bm-tip { min-height: 3.2em; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-2); }
 .bm-tip strong { color: var(--text); }
 @media (max-width: 360px) { .bm-field { width: 26%; } .bm-field__label { font-size: 10px; } }
+
+/* Phases d'entraînement (onglet Suivi) : lignes détachées du fond de la carte. */
+.phases-card { margin-bottom: var(--sp-4); }
+.phases-card .zsec:first-child { margin-top: 0; }
+.phases-card .zphase, .phases-card .zempty { background: var(--surface-2); }

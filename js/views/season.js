@@ -1,4 +1,4 @@
-/* Saison : éditeur et suppression des phases d'entraînement (affichage dans la vue Zoom). */
+/* Saison : éditeur, liste (onglet Suivi) et suppression des phases d'entraînement. */
 import { $, esc, uid } from '../core/utils.js';
 import { addDays, dateKey, formatKey, fromKey, todayKey } from '../core/dates.js';
 import { state, commit } from '../core/store.js';
@@ -6,8 +6,38 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { PHASE_TYPES, PHASES_KEY, isPhaseType, getPhases, overlapping } from '../core/season.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
+import { icon } from '../ui/icons.js';
 
 const shortDate = key => formatKey(key, { day: 'numeric', month: 'short' });
+
+/* ---------- Liste (onglet Suivi) ---------- */
+function phaseRow(p, current) {
+  const t = PHASE_TYPES[p.type];
+  return `<div class="zphase phase--${p.type}">
+    <button type="button" class="zphase__main" data-act="phase-edit" data-id="${esc(p.id)}">
+      <span class="phase-dot"></span><span class="zrow__body"><strong>${esc(t.name)}${current ? ' · en cours' : ''}</strong><span>${shortDate(p.start)} → ${shortDate(p.end)}${p.note ? ` · ${esc(p.note)}` : ''}</span></span>
+    </button>
+    <button type="button" class="icon-btn icon-btn--sm" data-act="phase-edit" data-id="${esc(p.id)}" aria-label="Modifier la phase">${icon('edit', 16)}</button>
+    <button type="button" class="icon-btn icon-btn--sm icon-btn--danger" data-act="phase-delete" data-id="${esc(p.id)}" aria-label="Supprimer la phase">${icon('trash', 16)}</button>
+  </div>`;
+}
+
+/** Toutes les phases : en cours et à venir (chronologique), puis terminées (la plus récente d'abord). */
+export function renderPhaseList(host = $('#phaseList')) {
+  if (!host) return;
+  const t = todayKey();
+  const phases = getPhases();
+  if (!phases.length) {
+    host.innerHTML = '<p class="zempty">Aucune phase planifiée. Touchez Ajouter pour en créer une.</p>';
+    return;
+  }
+  const next = phases.filter(p => p.end >= t);
+  const past = phases.filter(p => p.end < t).reverse();
+  host.innerHTML = [
+    next.length ? `<h3 class="zsec">En cours et à venir</h3><div class="zlist">${next.map(p => phaseRow(p, p.start <= t)).join('')}</div>` : '',
+    past.length ? `<h3 class="zsec">Terminées</h3><div class="zlist">${past.map(p => phaseRow(p, false)).join('')}</div>` : ''
+  ].join('');
+}
 
 /* ---------- Éditeur ---------- */
 /** Ouvre l'éditeur : phase existante (`id`) ou nouvelle phase, commençant le `start` si fourni. */
@@ -90,4 +120,11 @@ export function initSeason() {
   ].join('');
   form.elements.type.addEventListener('change', updateAdvice);
   form.addEventListener('submit', onSubmit);
+  $('#metricsView').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act^="phase-"], [data-action="phase-add"]');
+    if (!btn) return;
+    if (btn.dataset.action === 'phase-add') return openPhaseEditor();
+    if (btn.dataset.act === 'phase-edit') return openPhaseEditor(btn.dataset.id);
+    if (btn.dataset.act === 'phase-delete') return deletePhase(btn.dataset.id);
+  });
 }

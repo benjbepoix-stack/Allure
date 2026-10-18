@@ -2,7 +2,7 @@
    ZOOM : un seul calendrier, quatre échelles (année, mois, semaine, jour)
    ========================================================= */
 
-/* ---------- Barre du bas : Saison / Corps + Ajouter ---------- */
+/* ---------- Barre du bas : Saison / Suivi + Ajouter ---------- */
 .dock {
   position: fixed;
   left: 50%;
