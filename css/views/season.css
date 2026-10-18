@@ -2,19 +2,21 @@
 /* =========================================================
    SAISON : phases d'entraînement
    ========================================================= */
-/* Couleur de chaque type de phase : --ph (vive, aplats), --ph-ink (texte sur aplat) et --ph-soft (fond).
-   Teintes nettement séparées, aucune proche du rouge réservé aux courses. */
-.phase--base { --ph: #2f80ff; --ph-ink: #fff; }
-.phase--buildVolume { --ph: #5856f0; --ph-ink: #fff; }
-.phase--buildIntensity { --ph: #9b30d9; --ph-ink: #fff; }
-.phase--buildRace { --ph: #c21fcf; --ph-ink: #fff; }
-.phase--build { --ph: #7a3cf0; --ph-ink: #fff; }
-.phase--taper { --ph: #f5b400; --ph-ink: #2a1f00; }
-.phase--recovery { --ph: #10b981; --ph-ink: #fff; }
-.phase--transition { --ph: #8b90a0; --ph-ink: #fff; }
+/* Couleur de chaque type de phase : --ph (vive, aplats) et --ph-ink (texte sur aplat) sont générés
+   depuis la liste des types (js/views/phase-types.js, <style id="phaseColors">) ; --ph-soft (fond) en découle. */
 [class*="phase--"] { --ph-soft: color-mix(in srgb, var(--ph) 22%, transparent); }
-:root[data-theme="light"] .phase--taper { --ph: #e9a800; }
-:root[data-theme="light"] .phase--recovery { --ph: #0ea371; }
+
+/* Liste des types de phase */
+.field__labelrow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.field__labelrow .link-btn { font-size: var(--fs-xs); }
+#phaseTypeList .zphase { background: var(--surface-2); }
+#phaseTypeList .icon-btn:disabled { opacity: .3; }
+.ptype-add { margin-top: var(--sp-4); }
+.ptype-check { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.ptype-check input { width: 20px; height: 20px; accent-color: #ff2d55; }
+.input--color { padding: 6px; height: 48px; cursor: pointer; }
+.input--color::-webkit-color-swatch-wrapper { padding: 0; }
+.input--color::-webkit-color-swatch { border: 0; border-radius: calc(var(--r-md) - 4px); }
 
 .season-card { margin-bottom: var(--sp-4); }
 .phase-now { padding: 14px 16px; border-radius: var(--r-md); background: var(--ph-soft, var(--surface-2)); border: 1px solid var(--border); border-left: 4px solid var(--ph, var(--border-strong)); }

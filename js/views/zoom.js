@@ -11,7 +11,7 @@ import { $, esc, parseNumber, round, plural } from '../core/utils.js';
 import { addDays, dateKey, formatDate, formatKey, fromKey, mondayOf, todayKey } from '../core/dates.js';
 import { state } from '../core/store.js';
 import { MEASURE_FIELDS } from '../core/schema.js';
-import { PHASE_TYPES, getPhases, phaseOn, racesOn } from '../core/season.js';
+import { phaseType, getPhases, phaseOn, racesOn } from '../core/season.js';
 import { readText, write } from '../services/storage.js';
 import { icon } from '../ui/icons.js';
 import { PALETTE } from '../ui/charts.js';
@@ -22,8 +22,6 @@ export const LEVELS = ['Année', 'Mois', 'Semaine', 'Jour'];
 const LEVEL_KEY = 'allure_zoom_level';
 const HINTS = ['Glissez pour changer d’année', 'Glissez pour changer de mois', 'Glissez pour changer de semaine', 'Glissez pour changer de jour'];
 const NAV_LABELS = [['Année précédente', 'Année suivante'], ['Mois précédent', 'Mois suivant'], ['Semaine précédente', 'Semaine suivante'], ['Jour précédent', 'Jour suivant']];
-/* Charge relative d'un jour selon sa phase : hauteur des barres de l'année. */
-const LOAD = { base: 0.5, buildVolume: 0.85, buildIntensity: 0.95, buildRace: 0.9, build: 0.9, taper: 0.6, recovery: 0.3, transition: 0.2 };
 
 let level = 1;
 let focus = todayKey();
@@ -94,12 +92,12 @@ function yearHTML() {
       const p = phaseOn(dateKey(addDays(first, d)), phases);
       if (!p) continue;
       seg[p.type] = (seg[p.type] || 0) + 1;
-      load += LOAD[p.type] || 0.5;
+      load += phaseType(p.type).load; // charge relative du jour : hauteur de la barre
     }
     const key = dateKey(first);
     const races = state.races.filter(r => monthOf(r.date) === monthOf(key));
     const h = Math.max(6, Math.round((load / count) * 100));
-    const label = [cap(formatDate(first, { month: 'long' })), ...Object.keys(seg).map(k => PHASE_TYPES[k].short), races.length ? `${races.length} ${plural(races.length, 'course')}` : ''].filter(Boolean).join(', ');
+    const label = [cap(formatDate(first, { month: 'long' })), ...Object.keys(seg).map(k => phaseType(k).short), races.length ? `${races.length} ${plural(races.length, 'course')}` : ''].filter(Boolean).join(', ');
     bars.push(`<button type="button" class="zbar${monthOf(t) === monthOf(key) ? ' is-now' : ''}" data-go="month" data-key="${key}" aria-label="${esc(label)}">
       <span class="zbar__fill" style="height:${h}%">${Object.entries(seg).map(([k, n]) => `<i class="phase--${k}" style="flex:${n}"></i>`).join('')}</span>
       ${races.length ? '<span class="zbar__race"></span>' : ''}</button>`);
@@ -154,7 +152,7 @@ function nowCardHTML() {
   const phase = p
     ? (() => {
         const [w, total] = weekInPhase(p, t);
-        return `<span class="znow__kicker">Aujourd’hui · semaine ${w} sur ${total}</span><strong>${esc(PHASE_TYPES[p.type].name)}</strong>`;
+        return `<span class="znow__kicker">Aujourd’hui · semaine ${w} sur ${total}</span><strong>${esc(phaseType(p.type).name)}</strong>`;
       })()
     : `<span class="znow__kicker">Aujourd’hui</span><strong>Aucune phase en cours</strong>`;
   return `<button type="button" class="znow ${p ? `phase--${p.type}` : ''}" data-go="day" data-key="${t}">
@@ -180,7 +178,7 @@ function monthHTML() {
       const p = phaseOn(key, phases);
       const races = racesOn(key);
       const out = monthOf(key) !== monthOf(focus);
-      const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? PHASE_TYPES[p.type].name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
+      const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? phaseType(p.type).name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
       const cls = ['zcal__d', p ? `phase--${p.type}` : '', races.length ? 'is-race' : '', key === t ? 'is-today' : '', out ? 'is-out' : ''].filter(Boolean).join(' ');
       cells.push(`<button type="button" class="${cls}" data-go="day" data-key="${key}" aria-label="${esc(label)}">${fromKey(key).getDate()}</button>`);
     }
@@ -190,7 +188,7 @@ function monthHTML() {
     .map(
       p => `<div class="zphase phase--${p.type}">
         <button type="button" class="zphase__main" data-go="day" data-key="${p.start < first ? first : p.start}">
-          <span class="phase-dot"></span><span class="zrow__body"><strong>${esc(PHASE_TYPES[p.type].name)}</strong><span>${shortDate(p.start)} → ${shortDate(p.end)}${p.note ? ` · ${esc(p.note)}` : ''}</span></span>
+          <span class="phase-dot"></span><span class="zrow__body"><strong>${esc(phaseType(p.type).name)}</strong><span>${shortDate(p.start)} → ${shortDate(p.end)}${p.note ? ` · ${esc(p.note)}` : ''}</span></span>
         </button>
         <button type="button" class="icon-btn icon-btn--sm" data-act="phase-edit" data-id="${esc(p.id)}" aria-label="Modifier la phase">${icon('edit', 16)}</button>
         <button type="button" class="icon-btn icon-btn--sm icon-btn--danger" data-act="phase-delete" data-id="${esc(p.id)}" aria-label="Supprimer la phase">${icon('trash', 16)}</button>
@@ -223,13 +221,13 @@ function weekHTML() {
       body = `<span class="zday__block is-race"><strong>${icon('flag', 14)} ${esc(r.name)}${races.length > 1 ? ` +${races.length - 1}` : ''}</strong><span>${[r.time, r.distance !== '' ? fmtDist(r) : '', isUpcoming(r) ? countdownLabel(r.date) : r.resultTime].filter(Boolean).map(esc).join(' · ')}</span></span>`;
     } else if (p) {
       const [w, total] = weekInPhase(p, key);
-      body = `<span class="zday__block phase--${p.type}"><strong>${esc(PHASE_TYPES[p.type].short)}</strong><span>${key === p.start ? 'Début de la phase' : key === p.end ? 'Dernier jour de la phase' : `Semaine ${w} sur ${total}`}</span></span>`;
+      body = `<span class="zday__block phase--${p.type}"><strong>${esc(phaseType(p.type).short)}</strong><span>${key === p.start ? 'Début de la phase' : key === p.end ? 'Dernier jour de la phase' : `Semaine ${w} sur ${total}`}</span></span>`;
     } else body = `<span class="zday__block is-empty"><strong>Aucune phase</strong><span>Touchez pour ajouter</span></span>`;
     rows.push(`<button type="button" class="zday${key === t ? ' is-today' : ''}" data-go="day" data-key="${key}">
       <span class="zday__date"><span>${formatDate(d, { weekday: 'short' })}</span><strong>${d.getDate()}</strong></span>${body}</button>`);
   }
   const p = phaseOn(dateKey(addDays(monday, 3)), phases);
-  return `${p ? `<p class="zadvice phase--${p.type}"><b>${esc(PHASE_TYPES[p.type].short)}</b> · ${esc(PHASE_TYPES[p.type].advice)}</p>` : ''}<div class="zweek">${rows.join('')}</div>`;
+  return `${p ? `<p class="zadvice phase--${p.type}"><b>${esc(phaseType(p.type).short)}</b> · ${esc(phaseType(p.type).advice)}</p>` : ''}<div class="zweek">${rows.join('')}</div>`;
 }
 
 /* ---------- Échelle Jour ---------- */
@@ -275,9 +273,9 @@ function dayHTML() {
     const left = daysBetween(focus, p.end);
     html += `<section class="phase-now phase--${p.type} zphase-card">
       <div class="phase-now__kicker">${focus === t ? 'Aujourd’hui · ' : ''}Semaine ${w} sur ${total}</div>
-      <div class="phase-now__name">${esc(PHASE_TYPES[p.type].name)}</div>
+      <div class="phase-now__name">${esc(phaseType(p.type).name)}</div>
       <div class="phase-now__dates">${shortDate(p.start)} → ${shortDate(p.end)} · ${left === 0 ? 'dernier jour' : `encore ${left} ${plural(left, 'jour')}`}</div>
-      <p class="phase-now__advice">${esc(PHASE_TYPES[p.type].advice)}</p>
+      <p class="phase-now__advice">${esc(phaseType(p.type).advice)}</p>
       ${p.note ? `<p class="phase-now__note">${esc(p.note)}</p>` : ''}
       <div class="zactions">
         <button type="button" class="btn btn--soft btn--sm" data-act="phase-edit" data-id="${esc(p.id)}">${icon('edit', 16)}<span>Modifier la phase</span></button>
