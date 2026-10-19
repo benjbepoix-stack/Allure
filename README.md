@@ -17,12 +17,17 @@ Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, m
 ## Analyse (export RunGap)
 Onglet **Analyse** : « Importer l’export RunGap » lit le CSV complet exporté de RunGap (toutes les séances, tous sports). À chaque mise à jour, on redépose le fichier entier : seules les activités plus récentes que la dernière connue sont ajoutées ; les doublons Suunto / Garmin (départs à moins de 10 min) sont fusionnés. Les activités restent **sur l’appareil** (`allure_activities`, ~100 Ko pour 1 200 séances) : le nœud Firebase partagé avec Carnet n’accepte pas de nouvelle tranche.
 
-Périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phases qui se suivent, coupé après une phase de transition), avec ‹ › pour remonter dans le temps.
+Deux affichages : **Bilan** et **Plan**.
+
+Bilan, périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phases qui se suivent, coupé après une phase de transition), avec ‹ › pour remonter dans le temps.
 - Forme (42 j), fatigue (7 j) et fraîcheur : charge de chaque séance en TRIMP de Banister, estimée depuis la FC moyenne et la durée (l’export ne donne pas le temps par zone). Phases de Cadence en bandeaux, courses en repères.
-- Volume par sport (heures par jour ou par semaine), intensité facile / modéré / dur (FC moyenne de la séance, < 65 % et ≥ 75 % de la FC de réserve).
+- Temps, distance, D+ et séances filtrables par sport (puces au-dessus des chiffres ; le graphique de volume suit le filtre). Volume par sport (heures par jour ou par semaine).
+- Ski de fond et ski-roue (tous deux « Cross Country Skiing » dans l’export) : ski de fond de novembre à avril si le point le plus bas de la sortie est à 700 m ou plus, ski-roue sinon. Un export importé avant cette règle est remplacé en entier au prochain import (altitude ajoutée).
 - Repos : une case par jour, jours de repos par semaine, alerte au-delà de N jours d’affilée sans repos.
 - Bilan des phases (h/sem, repos, part en dur, évolution de la forme), jour des courses (forme et fraîcheur le matin), efficacité en course (m par battement), puissance / FC, records (★ record absolu).
-- Réglages (bouton « FC ») : FC max, FC de repos, seuil d’alerte, stockés dans `objectives.analysis` (synchronisés).
+- Réglages (bouton « FC ») : FC max, FC de repos, seuil d’alerte, volume de référence du plan, stockés dans `objectives.analysis` (synchronisés).
+
+Plan (inspiré de Frive) : phase en cours (semaine x sur y, objectif et J−), volume cible par semaine (référence × facteur de la phase, une semaine sur quatre allégée en foncier et en spécifique ; réalisé superposé, toucher une barre ouvre la semaine), semaine type jour par jour (sport principal = celui du prochain objectif, ski-roue hors saison de neige ; secondaire = sport le plus pratiqué des 8 dernières semaines) avec ce qui a été fait, séances types de la phase avec cibles de FC (Karvonen) et de watts à vélo depuis la dernière FTP.
 
 ## Phases automatiques
 Ajouter › **Phases automatiques** (ou ⚙︎ › Réglages) : chaque course à venir est classée **Objectif**, **Préparation** (défaut) ou **Ne compte pas** (aussi dans la fiche de la course, champ « Importance » ; stocké dans `objectives.racePriority`). Seuls les objectifs placent les phases, à rebours : foncier, spécifique volume puis intensité (6 semaines), affûtage de 7 à 14 jours selon distance et D+ (≥ 60 km ou ≥ 2 500 m D+ : 14 j ; ≥ 21 km ou ≥ 1 000 m : 10 j), récupération après chaque objectif (raccourcie si le suivant est proche) et coupure de 2 semaines après le dernier. « Appliquer ce plan » remplace les phases à partir d’aujourd’hui (confirmation) ; les phases passées restent, celle en cours s’arrête la veille ou est prolongée si le plan commence par le même type.

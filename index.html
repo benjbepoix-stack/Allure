@@ -148,6 +148,10 @@
         <input type="file" id="analysisFile" accept=".csv,text/csv" hidden>
       </div>
       <p class="an-info" id="analysisInfo"></p>
+      <div class="segmented an-modes" role="radiogroup" id="analysisModes" aria-label="Affichage">
+        <button type="button" role="radio" data-mode="bilan">Bilan</button>
+        <button type="button" role="radio" data-mode="plan">Plan</button>
+      </div>
       <div class="segmented an-periods" role="radiogroup" id="analysisPeriods" aria-label="Période">
         <button type="button" role="radio" data-period="month">Mois</button>
         <button type="button" role="radio" data-period="3m">3 mois</button>
@@ -346,12 +350,13 @@
   <div class="sheet-backdrop" id="analysisSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="analysisTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
-      <header class="sheet__head"><div><h2 class="sheet__title" id="analysisTitle">Réglages de l’analyse</h2><p class="sheet__sub">Servent à estimer la charge et l’intensité de chaque séance.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="analysisTitle">Réglages de l’analyse</h2><p class="sheet__sub">FC : charge de chaque séance et cibles du plan. Volume vide : moyenne de tes 12 derniers mois.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <form class="form" id="analysisForm" novalidate>
         <div class="form-grid">
           <div class="field"><label class="field__label" for="a-hrmax">FC max · bpm</label><input class="input" id="a-hrmax" name="hrMax" inputmode="numeric" autocomplete="off"></div>
           <div class="field"><label class="field__label" for="a-hrrest">FC de repos · bpm</label><input class="input" id="a-hrrest" name="hrRest" inputmode="numeric" autocomplete="off"></div>
-          <div class="field field--full"><label class="field__label" for="a-streak">Alerte après … jours sans repos</label><input class="input" id="a-streak" name="streak" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="a-streak">Alerte après … jours sans repos</label><input class="input" id="a-streak" name="streak" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="a-weekly">Volume de référence · h/sem</label><input class="input" id="a-weekly" name="weeklyHours" inputmode="decimal" autocomplete="off" placeholder="Automatique"></div>
         </div>
         <p class="field-error" id="analysisFormError" role="alert"></p>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>

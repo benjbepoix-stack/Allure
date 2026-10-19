@@ -14,6 +14,8 @@ import {
   isFlatRun, periodRange, records, streaks, summarize, zoneOf
 } from '../core/training.js';
 import { openSheet, closeSheet } from '../ui/dialog.js';
+import { renderPlan, selectPlanWeek } from './plan-view.js';
+import { openPlanner } from './planner.js';
 import { toast, toastError } from '../ui/toast.js';
 import { readText, write } from '../services/storage.js';
 
@@ -21,6 +23,10 @@ const PERIOD_KEY = 'allure_analysis_period';
 const W = 340;
 let period = PERIODS.some(p => p.id === readText(PERIOD_KEY, '')) ? readText(PERIOD_KEY, '') : '12m';
 let offset = 0;
+const MODE_KEY = 'allure_analysis_mode';
+const SPORT_KEY = 'allure_analysis_sport';
+let mode = readText(MODE_KEY, 'bilan') === 'plan' ? 'plan' : 'bilan';
+let sport = readText(SPORT_KEY, 'all');
 let memo = { list: null, settings: '', series: null };
 
 /* ---------- Formats ---------- */
@@ -261,14 +267,26 @@ const insight = html => `<p class="an-insight">${html}</p>`;
 const legend = items => `<div class="an-legend">${items.map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 const pill = (cls, text) => `<span class="an-pill an-pill--${cls}">${text}</span>`;
 
-function kpis(sum, days, alert, s) {
+/** Temps, distance et D+ (filtrables par sport), puis repos et fraîcheur (tous sports). */
+function kpis(acts, days, alert, s) {
+  const present = FAMILIES.filter(f => acts.some(a => familyOf(a) === f.id));
+  if (sport !== 'all' && !present.some(f => f.id === sport)) sport = 'all';
+  const shown = sport === 'all' ? acts : acts.filter(a => familyOf(a) === sport);
+  const sum = summarize(shown, days, s);
+  const all = summarize(acts, days, s);
   const last = days[days.length - 1];
   const fr = freshness(last.tsb);
   const tile = (v, u, l, d, cls = '') => `<div class="an-kpi"><span class="an-kpi__v">${v}<small>${u}</small></span><span class="an-kpi__l">${l}</span><span class="an-kpi__d ${cls}">${d}</span></div>`;
-  return `<div class="an-kpis">
-    ${tile(nf(sum.minutes / 60), 'h', 'Entraînement', `${nf(sum.count)} séance${sum.count > 1 ? 's' : ''} · ${nf(sum.hoursPerWeek, 1)} h/sem`)}
-    ${tile(nf(sum.distance / 1000), 'km', `${nf(sum.gain)} m D+`, 'tous sports')}
-    ${tile(nf(sum.restPerWeek, 1), 'j/sem', 'Repos moyen', `${sum.rest} jour${sum.rest > 1 ? 's' : ''} sur ${sum.days}`, sum.restPerWeek < 1 ? 'is-bad' : '')}
+  const chips = `<div class="an-chips" role="radiogroup" aria-label="Sport">${[{ id: 'all', name: 'Tous', color: '' }, ...present]
+    .map(f => `<button type="button" role="radio" class="an-chip" data-sport="${f.id}" aria-checked="${sport === f.id}">${f.color ? `<i style="background:${f.color}"></i>` : ''}${esc(f.name)}</button>`)
+    .join('')}</div>`;
+  const weeks = days.length / 7 || 1;
+  return `${chips}<div class="an-kpis">
+    ${tile(nf(sum.minutes / 60), 'h', 'Temps', `${nf(sum.minutes / 60 / weeks, 1)} h/sem`)}
+    ${tile(nf(sum.distance / 1000), 'km', 'Distance', `${nf(sum.distance / 1000 / weeks)} km/sem`)}
+    ${tile(nf(sum.gain), 'm', 'Dénivelé positif', `${nf(sum.gain / weeks)} m/sem`)}
+    ${tile(nf(sum.count), '', 'Séances', `${nf(sum.count / weeks, 1)} par semaine`)}
+    ${tile(nf(all.restPerWeek, 1), 'j/sem', 'Repos moyen', `${all.rest} jour${all.rest > 1 ? 's' : ''} sur ${all.days}`, all.restPerWeek < 1 ? 'is-bad' : '')}
     ${tile(signed(Math.round(last.tsb)), '', `Fraîcheur au ${shortDate(last.key)}`, fr.text, `is-${fr.cls}`)}
   </div>${alert}`;
 }
@@ -300,34 +318,11 @@ function loadSection(days, start, end, phases, races) {
 
 function volumeSection(acts, sum, start, end) {
   const unit = (fromKey(end) - fromKey(start)) / 864e5 <= 31 ? 'day' : 'week';
-  const used = FAMILIES.filter(f => sum.byFamily[f.id] > 0);
+  const used = FAMILIES.filter(f => sum.byFamily[f.id] > 0 && acts.some(a => familyOf(a) === f.id));
   return card(
     'Volume par sport',
     `Heures par ${unit === 'day' ? 'jour' : 'semaine'}`,
     `${legend(used.map(f => [f.color, `${f.name} · ${hours(sum.byFamily[f.id])}`]))}${volumeChart(acts, start, end, unit)}`
-  );
-}
-
-function intensitySection(acts, sum, s) {
-  const total = sum.minutes || 1;
-  const bar = z => `<span style="width:${(100 * z.v) / z.t}%;background:${z.c}" title="${z.n} : ${nf((100 * z.v) / z.t)} %"></span>`;
-  const row = (label, byZone) => {
-    const t = Object.values(byZone).reduce((a, b) => a + b, 0) || 1;
-    return `<div class="an-zrow"><span class="an-zrow__l">${label}</span><span class="an-zbar">${ZONES.map(z => bar({ v: byZone[z.id], t, c: z.color, n: z.name })).join('')}</span><span class="an-zrow__p">${nf((100 * byZone.hard) / t)} %</span></div>`;
-  };
-  const perFam = FAMILIES.filter(f => sum.byFamily[f.id] >= 60).map(f => {
-    const z = { easy: 0, mid: 0, hard: 0 };
-    acts.filter(a => familyOf(a) === f.id).forEach(a => (z[zoneOf(a, s)] += a.duration / 60));
-    return row(f.name, z);
-  });
-  const easyShare = (100 * sum.byZone.easy) / total;
-  const msg = easyShare < 70
-    ? `${nf(easyShare)} % du temps en facile : la plupart des plans visent environ 80 %. Tes séances faciles sont peut-être trop appuyées.`
-    : `${nf(easyShare)} % du temps en facile : bon équilibre (repère : environ 80 %).`;
-  return card(
-    'Intensité',
-    `Facile, modéré ou dur selon la FC moyenne de la séance (FC max ${s.hrMax}, repos ${s.hrRest})`,
-    `${legend(ZONES.map(z => [z.color, `${z.name} · ${nf((100 * sum.byZone[z.id]) / total)} %`]))}${row('Tout', sum.byZone)}${perFam.join('')}<p class="an-note">À droite : part du temps en dur.</p>${insight(msg)}`
   );
 }
 
@@ -416,7 +411,7 @@ function powerSection(acts, start, end) {
 }
 
 function recordsSection(acts, all) {
-  const fams = FAMILIES.filter(f => !['gym', 'other'].includes(f.id));
+  const fams = FAMILIES.filter(f => !['gym', 'hike', 'other'].includes(f.id));
   const rows = [];
   for (const f of fams) {
     const r = records(acts, f.id);
@@ -437,9 +432,6 @@ function recordsSection(acts, all) {
   if (!rows.length) return '';
   return card('Records', 'Meilleures séances de la période par sport ; ★ record absolu', rows.join(''));
 }
-
-/* Sport d'une course de Cadence -> sport de l'export (pour retrouver la séance du jour J). */
-const RACE_FAMILY = { 'Course à pied': 'run', 'Trail': 'trail', 'Cyclisme': 'bike', 'VTT': 'bike', 'Gravel': 'bike', 'Ski de fond': 'ski', 'Ski-roue': 'ski', 'Escalade': 'gym' };
 
 function racesSection(days, start, end, acts) {
   const byKey = new Map(days.map(d => [d.key, d]));
@@ -474,7 +466,9 @@ function renderHead(list, range) {
   const s = analysisSettings();
   $('#analysisHr').textContent = `FC ${s.hrMax} / ${s.hrRest}`;
   $$('#analysisPeriods [data-period]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.period === period)));
-  $('#analysisNav').hidden = !list.length;
+  $$('#analysisModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
+  $('#analysisPeriods').hidden = mode === 'plan';
+  $('#analysisNav').hidden = !list.length || mode === 'plan';
   $('#analysisRange').textContent = range?.label || '';
   $('#analysisPrev').disabled = !range?.hasPrev;
   $('#analysisNext').disabled = !range?.hasNext;
@@ -483,6 +477,11 @@ function renderHead(list, range) {
 export function renderAnalysis() {
   const list = getActivities();
   const body = $('#analysisBody');
+  if (mode === 'plan') {
+    renderHead(list, null);
+    renderPlan(body, list);
+    return;
+  }
   if (!list.length) {
     renderHead(list, null);
     body.innerHTML = `<section class="card an-card an-start"><h2 class="card__title">Importer tes entraînements</h2>
@@ -508,10 +507,9 @@ export function renderAnalysis() {
   const races = state.races;
   body.innerHTML = [
     range.note ? `<p class="an-note">${esc(range.note)}</p>` : '',
-    kpis(sum, days, streakAlert(days, s), s),
+    kpis(acts, days, streakAlert(days, s), s),
     loadSection(days, start, end, phases, races),
-    volumeSection(acts, sum, start, end),
-    intensitySection(acts, sum, s),
+    volumeSection(sport === 'all' ? acts : acts.filter(a => familyOf(a) === sport), sum, start, end),
     restSection(days, sum, start, end, s),
     phasesSection(all, acts, days, start, end, phases, s),
     racesSection(days, start, end, acts),
@@ -549,6 +547,7 @@ function openSettings() {
   f.hrMax.value = s.hrMax;
   f.hrRest.value = s.hrRest;
   f.streak.value = s.streakAlert;
+  f.weeklyHours.value = s.weeklyHours ? String(s.weeklyHours).replace('.', ',') : '';
   $('#analysisFormError').textContent = '';
   openSheet('analysisSheet');
 }
@@ -559,18 +558,21 @@ function onSettings(e) {
   const hrMax = parseNumber(f.hrMax.value);
   const hrRest = parseNumber(f.hrRest.value);
   const streak = parseNumber(f.streak.value);
+  const weekly = f.weeklyHours.value.trim() ? parseNumber(f.weeklyHours.value) : 0;
   const err = !(hrMax >= 120 && hrMax <= 230)
     ? 'FC max : entre 120 et 230.'
     : !(hrRest >= 30 && hrRest <= 100 && hrRest < hrMax - 40)
       ? 'FC de repos : entre 30 et 100, nettement sous la FC max.'
       : !(streak >= 3 && streak <= 30)
         ? 'Alerte : entre 3 et 30 jours.'
-        : '';
+        : weekly !== 0 && !(weekly >= 1 && weekly <= 40)
+          ? 'Volume de référence : entre 1 et 40 h, ou vide.'
+          : '';
   if (err) {
     $('#analysisFormError').textContent = err;
     return;
   }
-  state.objectives = { ...state.objectives, [ANALYSIS_KEY]: { hrMax: Math.round(hrMax), hrRest: Math.round(hrRest), streakAlert: Math.round(streak) } };
+  state.objectives = { ...state.objectives, [ANALYSIS_KEY]: { hrMax: Math.round(hrMax), hrRest: Math.round(hrRest), streakAlert: Math.round(streak), weeklyHours: weekly ? Math.round(weekly * 2) / 2 : 0 } };
   if (commit('objectives') === false) return;
   closeSheet('analysisSheet');
   toast('Réglages de l’analyse enregistrés', { type: 'success' });
@@ -588,6 +590,29 @@ export function initAnalysis() {
     offset = 0;
     write(PERIOD_KEY, p);
     renderAnalysis();
+  });
+  $('#analysisModes').addEventListener('click', e => {
+    const m = e.target.closest('[data-mode]')?.dataset.mode;
+    if (!m) return;
+    mode = m;
+    write(MODE_KEY, m);
+    renderAnalysis();
+  });
+  $('#analysisBody').addEventListener('click', e => {
+    const chip = e.target.closest('[data-sport]');
+    if (chip) {
+      sport = chip.dataset.sport;
+      write(SPORT_KEY, sport);
+      return renderAnalysis();
+    }
+    const week = e.target.closest('[data-plan-week], [data-week]');
+    if (week) {
+      const key = week.dataset.planWeek ?? week.dataset.week;
+      if (!key) return;
+      selectPlanWeek(key);
+      return renderAnalysis();
+    }
+    if (e.target.closest('[data-action="planner"]')) openPlanner();
   });
   $('#analysisPrev').addEventListener('click', () => {
     offset++;
