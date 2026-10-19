@@ -24,12 +24,13 @@
 .dock__tabs { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 420px) {
   .dock__tab { gap: 4px; font-size: 12px; }
-  .dock__add { padding: 0 16px; }
+  .dock__add { padding: 0; width: 58px; }
   .dock__add > span:last-child { display: none; }
 }
 
 .an-head { display: flex; align-items: center; gap: var(--sp-2); }
-.an-head .btn { flex: 1; }
+.an-head #analysisImport { flex: 1; }
+.an-head #analysisHr { flex: none; gap: 6px; }
 .an-info { margin: 8px 2px var(--sp-3); font-size: var(--fs-xs); color: var(--text-3); }
 
 .an-body { display: flex; flex-direction: column; gap: var(--sp-3); padding-bottom: 96px; }

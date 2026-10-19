@@ -144,7 +144,7 @@
     <section id="analysisView" class="view" hidden aria-labelledby="headerTitle">
       <div class="an-head">
         <button type="button" class="btn btn--primary btn--sm" id="analysisImport"><span>Importer l’export RunGap</span></button>
-        <button type="button" class="chip-btn" id="analysisHr" aria-label="Réglages de l’analyse">FC</button>
+        <button type="button" class="btn btn--soft btn--sm" id="analysisHr" aria-label="Réglages de l’analyse"><span data-icon="settings" data-size="16"></span><span>Réglages</span></button>
         <input type="file" id="analysisFile" accept=".csv,.txt,text/csv,text/plain,text/comma-separated-values,application/csv" hidden>
       </div>
       <p class="an-info" id="analysisInfo"></p>
@@ -349,7 +349,7 @@
   <div class="sheet-backdrop" id="analysisSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="analysisTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
-      <header class="sheet__head"><div><h2 class="sheet__title" id="analysisTitle">Réglages de l’analyse</h2><p class="sheet__sub">FC : charge de chaque séance et cibles du plan. Volume vide : moyenne de tes 12 derniers mois.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="analysisTitle">Réglages de l’analyse</h2><p class="sheet__sub">FC : charge de chaque séance. Volume de référence du plan vide : moyenne de tes 12 derniers mois.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <form class="form" id="analysisForm" novalidate>
         <div class="form-grid">
           <div class="field"><label class="field__label" for="a-hrmax">FC max · bpm</label><input class="input" id="a-hrmax" name="hrMax" inputmode="numeric" autocomplete="off"></div>
