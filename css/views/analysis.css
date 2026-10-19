@@ -31,14 +31,6 @@
 .an-head { display: flex; align-items: center; gap: var(--sp-2); }
 .an-head .btn { flex: 1; }
 .an-info { margin: 8px 2px var(--sp-3); font-size: var(--fs-xs); color: var(--text-3); }
-.an-periods { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); margin-bottom: var(--sp-2); }
-.an-periods button { min-height: 32px; font-size: 12.5px; }
-.an-periods button[aria-checked="true"] { background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow-sm); }
-:root[data-theme="dark"] .an-periods button[aria-checked="true"] { background: var(--surface-3); }
-.an-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-3); }
-.an-nav__label { font-size: var(--fs-sm); font-weight: 750; text-align: center; }
-.an-nav__label::first-letter { text-transform: uppercase; }
-.an-nav .icon-btn:disabled { opacity: .3; }
 
 .an-body { display: flex; flex-direction: column; gap: var(--sp-3); padding-bottom: 96px; }
 .an-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -151,11 +143,6 @@
 .an-modes button { min-height: 34px; font-size: 13px; }
 .an-modes button[aria-checked="true"] { background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow-sm); }
 :root[data-theme="dark"] .an-modes button[aria-checked="true"] { background: var(--surface-3); }
-.an-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-.an-chips::-webkit-scrollbar { display: none; }
-.an-chip { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 30px; padding: 0 11px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--border); color: var(--text-2); font-size: 12px; font-weight: 700; }
-.an-chip i { width: 8px; height: 8px; border-radius: 50%; }
-.an-chip[aria-checked="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
 
 /* ---------- Plan ---------- */
 .pl-hero { position: relative; overflow: hidden; gap: 4px; }
@@ -176,3 +163,34 @@
 .pl-phase small { display: block; font-size: var(--fs-xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pl-phase__e { font-size: var(--fs-xs); font-weight: 700; color: var(--accent); }
 .pl-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* ---------- Filtres collés sous l'en-tête ---------- */
+.an-bar {
+  position: sticky;
+  top: calc(var(--safe-top) + var(--topbar-h));
+  z-index: 20;
+  margin: 0 calc(-1 * var(--gutter)) var(--sp-3);
+  padding: 6px var(--gutter) 8px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border);
+}
+.an-bar[hidden] { display: none; }
+.an-bar__row { display: grid; grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1.25fr) 32px; align-items: center; gap: 6px; }
+.an-bar__row .icon-btn:disabled { opacity: .3; }
+.an-bar__range { display: block; margin-top: 4px; text-align: center; font-size: var(--fs-xs); font-weight: 700; color: var(--text-2); }
+.an-bar__range::first-letter { text-transform: uppercase; }
+.an-select { position: relative; display: block; min-width: 0; }
+.an-select::after { content: ""; position: absolute; right: 12px; top: 50%; width: 6px; height: 6px; margin-top: -5px; border: solid var(--text-3); border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); pointer-events: none; }
+.an-select select { width: 100%; min-height: 34px; padding: 0 28px 0 12px; border-radius: var(--r-pill); border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 750; -webkit-appearance: none; appearance: none; text-overflow: ellipsis; }
+.an-select.is-set select { background: var(--text); color: var(--bg); border-color: var(--text); }
+.an-select.is-set::after { border-color: var(--bg); }
+@media (min-width: 900px) {
+  .an-bar { top: calc(var(--safe-top) + 76px); }
+}
+.plan-from { margin: var(--sp-3) 0 var(--sp-2); }
+.plan-keep { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.plan-keep label { display: grid; grid-template-columns: 20px 10px minmax(0, 1fr); gap: 10px; align-items: start; padding: 6px 0; font-size: var(--fs-sm); cursor: pointer; }
+.plan-keep input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); }
+.plan-rows li.is-kept .plan-row__name small { color: var(--accent); font-weight: 700; }

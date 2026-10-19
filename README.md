@@ -17,7 +17,7 @@ Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, m
 ## Analyse (export RunGap)
 Onglet **Analyse** : « Importer l’export RunGap » lit le CSV complet exporté de RunGap (toutes les séances, tous sports). À chaque mise à jour, on redépose le fichier entier : seules les activités plus récentes que la dernière connue sont ajoutées ; les doublons Suunto / Garmin (départs à moins de 10 min) sont fusionnés. Les activités restent **sur l’appareil** (`allure_activities`, ~100 Ko pour 1 200 séances) : le nœud Firebase partagé avec Carnet n’accepte pas de nouvelle tranche.
 
-Deux affichages : **Bilan** et **Plan**.
+Deux affichages : **Bilan** et **Plan**. En Bilan, la période (menu, ‹ ›) et le sport (menu) restent collés sous l'en-tête au défilement.
 
 Bilan, périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phases qui se suivent, coupé après une phase de transition), avec ‹ › pour remonter dans le temps.
 - Forme (42 j), fatigue (7 j) et fraîcheur : charge de chaque séance en TRIMP de Banister, estimée depuis la FC moyenne et la durée (l’export ne donne pas le temps par zone). Phases de Cadence en bandeaux, courses en repères.
@@ -32,7 +32,7 @@ Plan (inspiré de Frive) : phase de la semaine choisie (semaine x sur y, objecti
 Import : séparateur (virgule, point-virgule, tabulation) et encodage (UTF-8, UTF-16) détectés. Une erreur d'affichage d'une vue n'interrompt jamais la synchronisation ni l'import.
 
 ## Phases automatiques
-Ajouter › **Phases automatiques** (ou ⚙︎ › Réglages) : chaque course à venir est classée **Objectif**, **Préparation** (défaut) ou **Ne compte pas** (aussi dans la fiche de la course, champ « Importance » ; stocké dans `objectives.racePriority`). Seuls les objectifs placent les phases, à rebours : foncier, spécifique volume puis intensité (6 semaines), affûtage de 7 à 14 jours selon distance et D+ (≥ 60 km ou ≥ 2 500 m D+ : 14 j ; ≥ 21 km ou ≥ 1 000 m : 10 j), récupération après chaque objectif (raccourcie si le suivant est proche) et coupure de 2 semaines après le dernier. « Appliquer ce plan » remplace les phases à partir d’aujourd’hui (confirmation) ; les phases passées restent, celle en cours s’arrête la veille ou est prolongée si le plan commence par le même type.
+Ajouter › **Phases automatiques** (ou ⚙︎ › Réglages) : chaque course à venir est classée **Objectif**, **Préparation** (défaut) ou **Ne compte pas** (aussi dans la fiche de la course, champ « Importance » ; stocké dans `objectives.racePriority`). Seuls les objectifs placent les phases, à rebours : foncier, spécifique volume puis intensité (6 semaines), affûtage de 7 à 14 jours selon distance et D+ (≥ 60 km ou ≥ 2 500 m D+ : 14 j ; ≥ 21 km ou ≥ 1 000 m : 10 j), récupération après chaque objectif (raccourcie si le suivant est proche) et coupure de 2 semaines après le dernier. « Recalculer à partir du » (aujourd'hui par défaut) : les phases d'avant cette date ne changent pas. Les phases faites à la main (champ `origin: 'manual'` ; les anciennes sans `origin` sont manuelles sauf note « Auto · … ») qui touchent la période sont listées, cochées par défaut : une phase cochée reste telle quelle et le plan se place autour (bout de moins d'une semaine rattaché à la phase précédente), une décochée est recalculée. « Appliquer ce plan » (confirmation) : la phase en cours s'arrête la veille ou est prolongée si le plan commence par le même type.
 
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 

@@ -104,7 +104,7 @@ async function onSubmit(e) {
   const v = formValues(form);
   const { valid, errors } = validate(v, phaseSchema);
   if (!valid) return showErrors(form, errors);
-  const phase = { id: v.editId || uid(), type: v.type, start: v.start, end: v.end, note: v.note };
+  const phase = { id: v.editId || uid(), type: v.type, start: v.start, end: v.end, note: v.note, origin: 'manual' };
   const clashes = getPhases().filter(p => p.id !== phase.id && p.start <= phase.end && phase.start <= p.end);
   if (clashes.length) {
     const names = clashes.map(c => `« ${phaseType(c.type).name} » (${shortDate(c.start)} → ${shortDate(c.end)})`).join(', ');

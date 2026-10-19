@@ -1,13 +1,13 @@
 /*
  * Feuille « Phases automatiques » : choix des courses qui comptent (objectif,
- * préparation, ne compte pas), aperçu du plan calé sur les objectifs, puis
- * remplacement des phases futures après confirmation.
+ * préparation, ne compte pas), date de départ du recalcul, phases faites à la
+ * main à garder, aperçu du résultat, puis application après confirmation.
  */
 import { $, esc } from '../core/utils.js';
 import { formatKey, fromKey, todayKey } from '../core/dates.js';
 import { state, commit } from '../core/store.js';
 import { phaseType } from '../core/season.js';
-import { PRIORITIES, applyPlan, planPhases, racePriority, withPriority } from '../core/planner.js';
+import { PRIORITIES, applyPlan, manualFrom, mergePlan, planPhases, racePriority, withPriority } from '../core/planner.js';
 import { openSheet, closeSheet, confirmDialog, isOpen } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 
@@ -17,9 +17,30 @@ const weeks = (a, b) => {
   return n % 7 === 0 ? `${n / 7} sem.` : n >= 7 ? `${(n / 7).toFixed(1).replace('.', ',')} sem.` : `${n} j`;
 };
 
+const dropped = new Set(); // phases manuelles décochées (recalculées)
+
+/** Date de départ choisie (jamais avant aujourd'hui). */
+const fromDate = () => {
+  const v = $('#planFrom').value;
+  return v && v > todayKey() ? v : todayKey();
+};
+const keepIds = from => manualFrom(from).filter(p => !dropped.has(p.id)).map(p => p.id);
+
+function renderKeep(from) {
+  const list = manualFrom(from);
+  $('#planKeep').innerHTML = list.length
+    ? `<p class="field__label">Phases faites à la main à garder</p><ul class="plan-keep">${list
+        .map(p => {
+          const t = phaseType(p.type);
+          return `<li><label><input type="checkbox" data-keep="${esc(p.id)}" ${dropped.has(p.id) ? '' : 'checked'}><span class="plan-dot" style="background:${t.color}"></span><span class="plan-row__name">${esc(t.name)}<small>${short(p.start)} → ${short(p.end)}${p.note ? ` · ${esc(p.note)}` : ''}</small></span></label></li>`;
+        })
+        .join('')}</ul><p class="settings-hint">Cochée : la phase reste telle quelle et le plan se place autour. Décochée : elle est recalculée.</p>`
+    : '';
+}
+
 function renderPlanner() {
-  const today = todayKey();
-  const races = state.races.filter(r => r.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const from = fromDate();
+  const races = state.races.filter(r => r.date >= from).sort((a, b) => a.date.localeCompare(b.date));
   $('#planRaces').innerHTML = races.length
     ? races
         .map(r => {
@@ -30,16 +51,19 @@ function renderPlanner() {
         .join('')
     : '<p class="an-empty">Aucune course à venir. Ajoute tes courses (bouton Ajouter), puis reviens ici.</p>';
 
-  const plan = planPhases(today);
+  renderKeep(from);
+  const plan = planPhases(from);
   $('#planApply').disabled = !plan.length;
   if (!plan.length) {
     $('#planPreview').innerHTML = races.length ? '<p class="an-empty">Choisis au moins une course « Objectif » pour placer les phases.</p>' : '';
     return;
   }
-  const start = plan[0].start;
-  const end = plan[plan.length - 1].end;
+  const keep = keepIds(from);
+  const result = mergePlan(plan, from, keep).filter(p => p.end >= from);
+  const start = result[0].start;
+  const end = result[result.length - 1].end;
   const span = (fromKey(end) - fromKey(start)) / 864e5 + 1;
-  const bar = plan
+  const bar = result
     .map(p => {
       const t = phaseType(p.type);
       const w = (((fromKey(p.end) - fromKey(p.start)) / 864e5 + 1) / span) * 100;
@@ -51,35 +75,40 @@ function renderPlanner() {
     .filter(r => r.date <= end)
     .map(r => `<i style="left:${(((fromKey(r.date) - fromKey(start)) / 864e5 + 0.5) / span) * 100}%" title="${esc(r.name)}"></i>`)
     .join('');
-  const rows = plan
+  const rows = result
     .map(p => {
       const t = phaseType(p.type);
-      const race = state.races.find(r => r.id === p.race);
-      return `<li><span class="plan-dot" style="background:${t.color}"></span><span class="plan-row__name">${esc(t.name)}<small>${p.type === 'taper' && race ? `jusqu’à ${esc(race.name)}` : ''}</small></span><span class="plan-row__dates">${short(p.start)} → ${short(p.end)}<small>${weeks(p.start, p.end)}</small></span></li>`;
+      const kept = keep.includes(p.id);
+      return `<li class="${kept ? 'is-kept' : ''}"><span class="plan-dot" style="background:${t.color}"></span><span class="plan-row__name">${esc(t.name)}<small>${kept ? 'gardée telle quelle' : ''}</small></span><span class="plan-row__dates">${short(p.start)} → ${short(p.end)}<small>${weeks(p.start, p.end)}</small></span></li>`;
     })
     .join('');
-  $('#planPreview').innerHTML = `<p class="field__label">Plan proposé</p><div class="plan-bar">${bar}${marks}</div><ol class="plan-rows">${rows}</ol>
+  $('#planPreview').innerHTML = `<p class="field__label">Résultat</p><div class="plan-bar">${bar}${marks}</div><ol class="plan-rows">${rows}</ol>
     <p class="settings-hint">Affûtage de 7 à 14 jours selon la distance et le D+, 6 semaines de spécifique (volume puis intensité), foncier avant, récupération après chaque objectif et coupure après le dernier.</p>`;
 }
 
 export function openPlanner() {
+  dropped.clear();
+  $('#planFrom').min = todayKey();
+  $('#planFrom').value = todayKey();
   renderPlanner();
   openSheet('planSheet', { focus: false });
 }
 
 async function onApply() {
-  const plan = planPhases();
+  const from = fromDate();
+  const plan = planPhases(from);
   if (!plan.length) return;
+  const keep = keepIds(from);
   const ok = await confirmDialog({
-    title: 'Remplacer les phases à venir ?',
-    message: 'Les phases à partir d’aujourd’hui sont remplacées par ce plan. Les phases passées sont conservées.',
-    confirmLabel: 'Remplacer'
+    title: 'Appliquer ce plan ?',
+    message: `Les phases à partir du ${short(from)} sont recalculées${keep.length ? `, sauf ${keep.length} phase${keep.length > 1 ? 's' : ''} faite${keep.length > 1 ? 's' : ''} à la main` : ''}. Les phases d’avant ne changent pas.`,
+    confirmLabel: 'Appliquer'
   });
   if (!ok) return;
-  state.objectives = applyPlan(plan);
+  state.objectives = applyPlan(plan, from, keep);
   if (commit('objectives') === false) return;
   closeSheet('planSheet');
-  toast(`${plan.length} phases placées selon tes objectifs`, { type: 'success' });
+  toast('Phases mises à jour selon tes objectifs', { type: 'success' });
 }
 
 export function initPlanner() {
@@ -91,6 +120,14 @@ export function initPlanner() {
     renderPlanner();
   });
   $('#planApply').addEventListener('click', onApply);
+  $('#planFrom').addEventListener('change', renderPlanner);
+  $('#planKeep').addEventListener('change', e => {
+    const box = e.target.closest('[data-keep]');
+    if (!box) return;
+    if (box.checked) dropped.delete(box.dataset.keep);
+    else dropped.add(box.dataset.keep);
+    renderPlanner();
+  });
 }
 
 /** Données modifiées ailleurs pendant que la feuille est ouverte. */
