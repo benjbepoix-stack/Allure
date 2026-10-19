@@ -171,11 +171,15 @@ export function normalizePhases(raw) {
       type: p.type,
       start: p.start,
       end: p.end,
-      note: typeof p.note === 'string' ? p.note.slice(0, 200) : ''
+      note: typeof p.note === 'string' ? p.note.slice(0, 200) : '',
+      ...(p.origin === 'auto' || p.origin === 'manual' ? { origin: p.origin } : {})
     }))
     .filter(p => isPhaseType(p.type) && isDateKey(p.start) && isDateKey(p.end) && p.end >= p.start)
     .sort((a, b) => a.start.localeCompare(b.start));
 }
+
+/** Phase saisie ou modifiée à la main (les anciennes phases automatiques ont une note « Auto · … »). */
+export const isManualPhase = p => (p.origin ? p.origin === 'manual' : !p.note.startsWith('Auto ·'));
 
 export const getPhases = () => normalizePhases(state.objectives?.[PHASES_KEY]);
 

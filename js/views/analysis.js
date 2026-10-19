@@ -270,19 +270,14 @@ const pill = (cls, text) => `<span class="an-pill an-pill--${cls}">${text}</span
 
 /** Temps, distance et D+ (filtrables par sport), puis repos et fraîcheur (tous sports). */
 function kpis(acts, days, alert, s) {
-  const present = FAMILIES.filter(f => acts.some(a => familyOf(a) === f.id));
-  if (sport !== 'all' && !present.some(f => f.id === sport)) sport = 'all';
   const shown = sport === 'all' ? acts : acts.filter(a => familyOf(a) === sport);
   const sum = summarize(shown, days, s);
   const all = summarize(acts, days, s);
   const last = days[days.length - 1];
   const fr = freshness(last.tsb);
   const tile = (v, u, l, d, cls = '') => `<div class="an-kpi"><span class="an-kpi__v">${v}<small>${u}</small></span><span class="an-kpi__l">${l}</span><span class="an-kpi__d ${cls}">${d}</span></div>`;
-  const chips = `<div class="an-chips" role="radiogroup" aria-label="Sport">${[{ id: 'all', name: 'Tous', color: '' }, ...present]
-    .map(f => `<button type="button" role="radio" class="an-chip" data-sport="${f.id}" aria-checked="${sport === f.id}">${f.color ? `<i style="background:${f.color}"></i>` : ''}${esc(f.name)}</button>`)
-    .join('')}</div>`;
   const weeks = days.length / 7 || 1;
-  return `${chips}<div class="an-kpis">
+  return `<div class="an-kpis">
     ${tile(nf(sum.minutes / 60), 'h', 'Temps', `${nf(sum.minutes / 60 / weeks, 1)} h/sem`)}
     ${tile(nf(sum.distance / 1000), 'km', 'Distance', `${nf(sum.distance / 1000 / weeks)} km/sem`)}
     ${tile(nf(sum.gain), 'm', 'Dénivelé positif', `${nf(sum.gain / weeks)} m/sem`)}
@@ -458,6 +453,15 @@ function racesSection(days, start, end, acts) {
 }
 
 /* ---------- Rendu ---------- */
+/* Menu des sports : ceux pratiqués sur la période ; un sport absent revient à « Tous les sports ». */
+function renderSports(acts) {
+  const present = FAMILIES.filter(f => acts.some(a => familyOf(a) === f.id));
+  if (sport !== 'all' && !present.some(f => f.id === sport)) sport = 'all';
+  $('#analysisSport').innerHTML = [{ id: 'all', name: 'Tous les sports' }, ...present].map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  $('#analysisSport').value = sport;
+  $('#analysisSport').closest('.an-select').classList.toggle('is-set', sport !== 'all');
+}
+
 function renderHead(list, range) {
   const info = importInfo();
   const last = list[list.length - 1];
@@ -466,10 +470,9 @@ function renderHead(list, range) {
     : 'Aucune activité importée sur cet appareil.';
   const s = analysisSettings();
   $('#analysisHr').textContent = `FC ${s.hrMax} / ${s.hrRest}`;
-  $$('#analysisPeriods [data-period]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.period === period)));
   $$('#analysisModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
-  $('#analysisPeriods').hidden = mode === 'plan';
-  $('#analysisNav').hidden = !list.length || mode === 'plan';
+  $('#analysisBar').hidden = !list.length || mode === 'plan';
+  $('#analysisPeriod').value = period;
   $('#analysisRange').textContent = range?.label || '';
   $('#analysisPrev').disabled = !range?.hasPrev;
   $('#analysisNext').disabled = !range?.hasNext;
@@ -504,6 +507,7 @@ export function renderAnalysis() {
   }
   const days = all.filter(d => d.key >= start && d.key <= end);
   const acts = list.filter(a => a.date >= start && a.date <= end);
+  renderSports(acts);
   const sum = summarize(acts, days, s);
   const races = state.races;
   body.innerHTML = [
@@ -591,12 +595,15 @@ export function initAnalysis() {
   $('#analysisFile').addEventListener('change', onFile);
   $('#analysisHr').addEventListener('click', openSettings);
   $('#analysisForm').addEventListener('submit', onSettings);
-  $('#analysisPeriods').addEventListener('click', e => {
-    const p = e.target.closest('[data-period]')?.dataset.period;
-    if (!p) return;
-    period = p;
+  $('#analysisPeriod').addEventListener('change', e => {
+    period = e.target.value;
     offset = 0;
-    write(PERIOD_KEY, p);
+    write(PERIOD_KEY, period);
+    renderAnalysis();
+  });
+  $('#analysisSport').addEventListener('change', e => {
+    sport = e.target.value;
+    write(SPORT_KEY, sport);
     renderAnalysis();
   });
   $('#analysisModes').addEventListener('click', e => {
@@ -607,12 +614,6 @@ export function initAnalysis() {
     renderAnalysis();
   });
   $('#analysisBody').addEventListener('click', e => {
-    const chip = e.target.closest('[data-sport]');
-    if (chip) {
-      sport = chip.dataset.sport;
-      write(SPORT_KEY, sport);
-      return renderAnalysis();
-    }
     const week = e.target.closest('[data-plan-week], [data-week]');
     if (week) {
       const key = week.dataset.planWeek ?? week.dataset.week;

@@ -152,18 +152,17 @@
         <button type="button" role="radio" data-mode="bilan">Bilan</button>
         <button type="button" role="radio" data-mode="plan">Plan</button>
       </div>
-      <div class="segmented an-periods" role="radiogroup" id="analysisPeriods" aria-label="Période">
-        <button type="button" role="radio" data-period="month">Mois</button>
-        <button type="button" role="radio" data-period="3m">3 mois</button>
-        <button type="button" role="radio" data-period="6m">6 mois</button>
-        <button type="button" role="radio" data-period="12m">12 mois</button>
-        <button type="button" role="radio" data-period="year">Année</button>
-        <button type="button" role="radio" data-period="season">Saison</button>
-      </div>
-      <div class="an-nav" id="analysisNav" hidden>
-        <button type="button" class="icon-btn icon-btn--sm" id="analysisPrev" aria-label="Période précédente"><span data-icon="chevronLeft" data-size="18"></span></button>
-        <span class="an-nav__label" id="analysisRange"></span>
-        <button type="button" class="icon-btn icon-btn--sm" id="analysisNext" aria-label="Période suivante"><span data-icon="chevronRight" data-size="18"></span></button>
+      <!-- Filtres collés en haut au défilement : période, sport, période précédente / suivante -->
+      <div class="an-bar" id="analysisBar">
+        <div class="an-bar__row">
+          <button type="button" class="icon-btn icon-btn--sm" id="analysisPrev" aria-label="Période précédente"><span data-icon="chevronLeft" data-size="18"></span></button>
+          <label class="an-select"><select id="analysisPeriod" aria-label="Période">
+            <option value="month">Mois</option><option value="3m">3 mois</option><option value="6m">6 mois</option><option value="12m">12 mois</option><option value="year">Année</option><option value="season">Saison</option>
+          </select></label>
+          <label class="an-select"><select id="analysisSport" aria-label="Sport"><option value="all">Tous les sports</option></select></label>
+          <button type="button" class="icon-btn icon-btn--sm" id="analysisNext" aria-label="Période suivante"><span data-icon="chevronRight" data-size="18"></span></button>
+        </div>
+        <span class="an-bar__range" id="analysisRange"></span>
       </div>
       <div class="an-body" id="analysisBody" aria-live="polite"></div>
     </section>
@@ -372,6 +371,8 @@
       <div class="sheet__scroll">
         <p class="field__label">Courses à venir</p>
         <div class="plan-races" id="planRaces"></div>
+        <div class="field plan-from"><label class="field__label" for="planFrom">Recalculer à partir du</label><input type="date" class="input" id="planFrom"><p class="settings-hint">Les phases avant cette date ne changent pas.</p></div>
+        <div id="planKeep"></div>
         <div id="planPreview"></div>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Fermer</button><button type="button" class="btn btn--primary" id="planApply">Appliquer ce plan</button></div>
       </div>

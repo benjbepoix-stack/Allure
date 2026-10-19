@@ -12,7 +12,7 @@
 import { state } from './store.js';
 import { addDays, dateKey, fromKey, todayKey } from './dates.js';
 import { parseNumber, uid } from './utils.js';
-import { PHASES_KEY, getPhases } from './season.js';
+import { PHASES_KEY, getPhases, isManualPhase } from './season.js';
 
 export const PRIORITY_KEY = 'racePriority';
 export const PRIORITIES = [
@@ -102,21 +102,61 @@ export function planPhases(from = todayKey()) {
   return out;
 }
 
+/** Morceaux de `p` hors de toutes les phases `fixed` (une phase gardée peut couper une phase du plan en deux). */
+function around(p, fixed) {
+  let parts = [p];
+  for (const f of fixed) {
+    parts = parts.flatMap(x => {
+      if (f.end < x.start || f.start > x.end) return [x];
+      const out = [];
+      if (x.start < f.start) out.push({ ...x, end: plus(f.start, -1), cut: true });
+      if (x.end > f.end) out.push({ ...x, start: plus(f.end, 1), cut: true });
+      return out;
+    });
+  }
+  return parts;
+}
+
+/* Bout de phase de moins d'une semaine laissé par une coupure : rattaché à la phase qui le précède. */
+function absorbScraps(list) {
+  const out = [];
+  for (const { cut, ...p } of list) {
+    const prev = out[out.length - 1];
+    if (cut && days(p.start, p.end) < 6 && prev && plus(prev.end, 1) === p.start) prev.end = p.end;
+    else out.push(p);
+  }
+  return out;
+}
+
+/** Phases manuelles qui seraient touchées par un recalcul à partir de `from`. */
+export const manualFrom = (from = todayKey()) => getPhases().filter(p => p.end >= from && isManualPhase(p));
+
 /**
- * Phases après application du plan : les phases passées restent, celle en cours
- * s'arrête la veille de `from` (ou est prolongée si le plan commence par le même
- * type), toutes les phases futures sont remplacées.
+ * Phases après application du plan à partir de `from` : les phases passées
+ * restent, celle en cours s'arrête la veille de `from` (ou est prolongée si le
+ * plan commence par le même type), les phases manuelles de `keep` (ids) restent
+ * telles quelles et le plan se place autour ; les autres phases futures sont remplacées.
+ * @returns {Array} phases (triées)
  */
-export function applyPlan(plan, from = todayKey()) {
+export function mergePlan(plan, from = todayKey(), keep = []) {
   const kept = [];
-  const next = plan.map(p => ({ id: uid(), type: p.type, start: p.start, end: p.end, note: p.note }));
+  const fixed = getPhases().filter(p => p.end >= from && keep.includes(p.id));
+  const next = absorbScraps(plan.flatMap(p => around({ type: p.type, start: p.start, end: p.end, note: p.note, origin: 'auto' }, fixed))).map(p => ({
+    id: uid(),
+    ...p
+  }));
   for (const p of getPhases()) {
     if (p.end < from) kept.push(p);
+    else if (keep.includes(p.id)) continue;
     else if (p.start < from) {
-      if (next[0] && next[0].type === p.type && next[0].start === from) {
-        next[0] = { ...next[0], id: p.id, start: p.start, note: p.note || next[0].note };
-      } else kept.push({ ...p, end: plus(from, -1) });
+      const piece = around({ ...p, end: plus(from, -1) }, fixed);
+      if (next[0] && next[0].type === p.type && next[0].start === from && !fixed.some(f => f.start < from)) {
+        next[0] = { ...next[0], id: p.id, start: p.start, note: p.note || next[0].note, origin: p.origin };
+      } else kept.push(...piece);
     }
   }
-  return { ...state.objectives, [PHASES_KEY]: [...kept, ...next] };
+  return [...kept, ...fixed, ...next].sort((a, b) => a.start.localeCompare(b.start));
 }
+
+/** Nouvelle valeur du nœud objectives après application du plan (voir `mergePlan`). */
+export const applyPlan = (plan, from = todayKey(), keep = []) => ({ ...state.objectives, [PHASES_KEY]: mergePlan(plan, from, keep) });
