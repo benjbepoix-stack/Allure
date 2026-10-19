@@ -10,12 +10,13 @@ import { getPhases, phaseType } from '../core/season.js';
 import { getActivities, importInfo, mergeExport } from '../core/activities.js';
 import { racePriority } from '../core/planner.js';
 import {
-  ANALYSIS_KEY, FAMILIES, PERIODS, ZONES, analysisSettings, buckets, dailySeries, efficiency, familyOf,
-  isFlatRun, periodRange, records, streaks, summarize, zoneOf
+  ANALYSIS_KEY, FAMILIES, PERIODS, RACE_FAMILY, analysisSettings, buckets, dailySeries, efficiency, familyOf,
+  isFlatRun, periodRange, records, streaks, summarize
 } from '../core/training.js';
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { renderPlan, selectPlanWeek } from './plan-view.js';
 import { openPlanner } from './planner.js';
+import { openPhaseEditor } from './season.js';
 import { toast, toastError } from '../ui/toast.js';
 import { readText, write } from '../services/storage.js';
 
@@ -520,6 +521,13 @@ export function renderAnalysis() {
 }
 
 /* ---------- Import et réglages ---------- */
+/* Texte du fichier : UTF-8, ou UTF-16 si le fichier commence par sa marque (certains partages iOS). */
+async function readFile(file) {
+  const buf = new Uint8Array(await new Response(file).arrayBuffer());
+  const utf16 = buf[0] === 0xff && buf[1] === 0xfe ? 'utf-16le' : buf[0] === 0xfe && buf[1] === 0xff ? 'utf-16be' : 'utf-8';
+  return new TextDecoder(utf16).decode(buf);
+}
+
 async function onFile(e) {
   const file = e.target.files?.[0];
   e.target.value = '';
@@ -527,18 +535,18 @@ async function onFile(e) {
   const btn = $('#analysisImport');
   btn.classList.add('is-loading');
   try {
-    const text = await file.text();
+    const text = await readFile(file);
     const res = mergeExport(text);
     memo = { list: null };
     toast(res.first ? `${nf(res.total)} activités importées` : res.added ? `${res.added} nouvelle${res.added > 1 ? 's' : ''} activité${res.added > 1 ? 's' : ''} ajoutée${res.added > 1 ? 's' : ''}` : 'Aucune nouvelle activité depuis le dernier import', { type: res.added ? 'success' : 'info' });
     offset = 0;
-    renderAnalysis();
   } catch (error) {
     console.warn('[analyse] import', error);
     toastError(error?.message || 'Import impossible.');
   } finally {
     btn.classList.remove('is-loading');
   }
+  renderAnalysis();
 }
 
 function openSettings() {
@@ -612,6 +620,9 @@ export function initAnalysis() {
       selectPlanWeek(key);
       return renderAnalysis();
     }
+    const phase = e.target.closest('[data-edit-phase]');
+    if (phase) return openPhaseEditor(phase.dataset.editPhase);
+    if (e.target.closest('[data-action="add-phase"]')) return openPhaseEditor(null);
     if (e.target.closest('[data-action="planner"]')) openPlanner();
   });
   $('#analysisPrev').addEventListener('click', () => {

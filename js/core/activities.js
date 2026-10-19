@@ -41,8 +41,16 @@ const VERSION = 2;
 
 let cache = null;
 
-/** Découpe un CSV (champs entre guillemets, virgules et retours à la ligne dans les champs). */
+/** Séparateur deviné sur l'en-tête : virgule, point-virgule (CSV réenregistré en français) ou tabulation. */
+function separator(text) {
+  const head = text.slice(0, text.search(/\r|\n|$/));
+  const count = c => head.split(c).length;
+  return [',', ';', '\t'].reduce((best, c) => (count(c) > count(best) ? c : best), ',');
+}
+
+/** Découpe un CSV (champs entre guillemets, séparateurs et retours à la ligne dans les champs). */
 export function parseCSV(text) {
+  const sep = separator(text);
   const rows = [];
   let row = [];
   let field = '';
@@ -57,7 +65,7 @@ export function parseCSV(text) {
         } else quoted = false;
       } else field += c;
     } else if (c === '"') quoted = true;
-    else if (c === ',') {
+    else if (c === sep) {
       row.push(field);
       field = '';
     } else if (c === '\n' || c === '\r') {
@@ -74,7 +82,7 @@ export function parseCSV(text) {
 }
 
 const num = v => {
-  const n = Number(String(v ?? '').trim());
+  const n = Number(String(v ?? '').trim().replace(',', '.'));
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
 };
 
