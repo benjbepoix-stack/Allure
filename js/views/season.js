@@ -3,7 +3,7 @@ import { $, esc, uid } from '../core/utils.js';
 import { addDays, dateKey, formatKey, fromKey, todayKey } from '../core/dates.js';
 import { state, commit } from '../core/store.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
-import { PHASES_KEY, phaseType, phaseTypes, isPhaseType, getPhases, overlapping } from '../core/season.js';
+import { PHASES_KEY, phaseType, phaseTypes, isPhaseType, getPhases } from '../core/season.js';
 import { initPhaseTypes } from './phase-types.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -22,6 +22,7 @@ export function openPhaseEditor(id = null, { start: startAt = '' } = {}) {
   form.elements.editId.value = p?.id || '';
   fillTypeSelect(p?.type);
   $('#phaseSheetTitle').textContent = p ? 'Modifier la phase' : 'Nouvelle phase';
+  $('#phaseDelete').hidden = !p;
   if (p) ['type', 'start', 'end', 'note'].forEach(k => (form.elements[k].value = p[k] || ''));
   else {
     // Par défaut : enchaîne après la dernière phase (ou aujourd'hui), sur 4 semaines.
@@ -79,35 +80,61 @@ function savePhases(phases, message) {
   return true;
 }
 
-function onSubmit(e) {
+/**
+ * Place `phase` parmi `others` : les phases chevauchées sont raccourcies, retirées si
+ * entièrement recouvertes, ou coupées en deux si `phase` tombe en leur milieu.
+ */
+function fitAround(others, phase) {
+  const before = key => dateKey(addDays(fromKey(key), -1));
+  const after = key => dateKey(addDays(fromKey(key), 1));
+  const out = [phase];
+  for (const p of others) {
+    if (p.end < phase.start || p.start > phase.end) out.push(p);
+    else {
+      if (p.start < phase.start) out.push({ ...p, end: before(phase.start) });
+      if (p.end > phase.end) out.push({ ...p, id: p.start < phase.start ? uid() : p.id, start: after(phase.end) });
+    }
+  }
+  return out.sort((a, b) => a.start.localeCompare(b.start));
+}
+
+async function onSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const v = formValues(form);
   const { valid, errors } = validate(v, phaseSchema);
   if (!valid) return showErrors(form, errors);
-  const clash = overlapping(v.start, v.end, v.editId);
-  if (clash) return showErrors(form, { end: `Chevauche « ${phaseType(clash.type).name} » (${shortDate(clash.start)} → ${shortDate(clash.end)}).` });
-  const phases = getPhases();
   const phase = { id: v.editId || uid(), type: v.type, start: v.start, end: v.end, note: v.note };
-  const index = phases.findIndex(x => x.id === v.editId);
-  if (index >= 0) phases[index] = phase;
-  else phases.push(phase);
-  phases.sort((a, b) => a.start.localeCompare(b.start));
+  const clashes = getPhases().filter(p => p.id !== phase.id && p.start <= phase.end && phase.start <= p.end);
+  if (clashes.length) {
+    const names = clashes.map(c => `« ${phaseType(c.type).name} » (${shortDate(c.start)} → ${shortDate(c.end)})`).join(', ');
+    const ok = await confirmDialog({
+      title: 'Ajuster les phases voisines ?',
+      message: `Ces dates chevauchent ${names}. Elles seront raccourcies (ou retirées si entièrement recouvertes).`,
+      confirmLabel: 'Ajuster'
+    });
+    if (!ok) return showErrors(form, { end: `Chevauche ${names}.` });
+  }
+  const phases = fitAround(getPhases().filter(p => p.id !== phase.id), phase);
+  const edited = Boolean(v.editId && getPhases().some(p => p.id === v.editId));
   // La feuille ne se ferme qu'une fois la phase enregistrée (sinon la saisie serait perdue).
-  if (savePhases(phases, index >= 0 ? 'Phase modifiée' : 'Phase ajoutée')) closeSheet('phaseSheet');
+  if (savePhases(phases, edited ? 'Phase modifiée' : 'Phase ajoutée')) closeSheet('phaseSheet');
 }
 
 export async function deletePhase(id) {
   const phase = getPhases().find(p => p.id === id);
   if (!phase) return toastError('Cette phase n’existe plus.');
   const ok = await confirmDialog({ title: `Supprimer la phase « ${phaseType(phase.type).name} » ?`, message: `${shortDate(phase.start)} → ${shortDate(phase.end)}`, confirmLabel: 'Supprimer', danger: true });
-  if (ok) savePhases(getPhases().filter(p => p.id !== id), 'Phase supprimée');
+  return ok && savePhases(getPhases().filter(p => p.id !== id), 'Phase supprimée');
 }
 
 export function initSeason() {
   const form = $('#phaseForm');
   form.elements.type.addEventListener('change', updateAdvice);
   form.addEventListener('submit', onSubmit);
+  $('#phaseDelete').addEventListener('click', async () => {
+    if (await deletePhase(form.elements.editId.value)) closeSheet('phaseSheet');
+  });
   // Liste des types modifiée pendant la saisie d'une phase : menu mis à jour, choix conservé.
   initPhaseTypes({ changed: () => { fillTypeSelect(); updateAdvice(); } });
   fillTypeSelect();

@@ -1,13 +1,12 @@
 /*
- * Analyse › Plan : phase en cours, volume cible semaine par semaine (et réalisé),
- * semaine type jour par jour avec ce qui a été fait, et séances types de la phase.
+ * Analyse › Plan : phase de la semaine choisie, volume cible semaine par semaine
+ * (et réalisé), et liste des phases, modifiables à la main.
  */
 import { esc } from '../core/utils.js';
 import { addDays, dateKey, formatKey, fromKey, mondayOf, todayKey, daysUntil } from '../core/dates.js';
 import { planHorizon, planWeek, referenceHours } from '../core/plan.js';
-import { analysisSettings, family, familyOf } from '../core/training.js';
-import { getPhases } from '../core/season.js';
-import { icon } from '../ui/icons.js';
+import { analysisSettings } from '../core/training.js';
+import { getPhases, phaseType } from '../core/season.js';
 
 const nf = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const dur = min => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${String(Math.round(min % 60)).padStart(2, '0')}` : ''}` : `${Math.round(min)} min`);
@@ -54,34 +53,20 @@ function volumeChart(weeks, done, selected, today) {
   return `<svg viewBox="0 0 ${W} 136" role="img" aria-label="Volume cible et réalisé par semaine">${svg}</svg>`;
 }
 
-function dayRow(d, activities, today) {
-  const label = formatKey(d.key, { weekday: 'short', day: 'numeric' });
-  const done = activities.filter(a => a.date === d.key);
-  const doneHtml = done.length
-    ? `<div class="pl-done-row">${done.map(a => `<span><i style="background:${family(familyOf(a)).color}"></i>${esc(family(familyOf(a)).name)} ${dur(a.duration / 60)}</span>`).join('')}</div>`
-    : d.key < today && d.sessions.length
-      ? '<div class="pl-done-row pl-done-row--miss">Non fait</div>'
-      : '';
-  let plan;
-  if (d.race) plan = `<div class="pl-race">${icon('flag', 14)} ${esc(d.race.name)}${d.race.distance ? ` · ${esc(d.race.distance)} km` : ''}</div>`;
-  else if (!d.sessions.length) plan = '<div class="pl-rest">Repos</div>';
-  else
-    plan = d.sessions
-      .map(
-        x => `<details class="pl-session"><summary><i style="background:${x.color || 'var(--text-3)'}"></i><span class="pl-session__t">${esc(x.title)}${x.sport ? ` <small>${esc(x.sport)}</small>` : ''}</span><span class="pl-session__d">${dur(x.minutes)}</span></summary>
-          <p>${esc(x.text)}</p>${x.target ? `<p class="pl-target">Cible : ${esc(x.target)}</p>` : ''}</details>`
-      )
-      .join('');
-  return `<li class="pl-day${d.key === today ? ' is-today' : ''}"><span class="pl-day__l">${label}</span><div class="pl-day__b">${plan}${doneHtml}</div></li>`;
-}
-
-function sessionsCard(week) {
-  const seen = new Map();
-  week.days.forEach(d => d.sessions.forEach(x => !seen.has(x.kind + x.fam) && seen.set(x.kind + x.fam, x)));
-  const list = [...seen.values()].filter(x => !['easy', 'recovery', 'mobility'].includes(x.kind));
-  if (!list.length) return '';
-  return `<section class="card an-card"><header><h2 class="card__title">Séances types</h2><p class="card__sub">Séances clés de la phase ${esc(week.type.short)}</p></header>
-    <ul class="pl-keys">${list.map(x => `<li><i style="background:${x.color || 'var(--text-3)'}"></i><div><strong>${esc(x.title)}${x.sport ? ` · ${esc(x.sport)}` : ''}</strong><p>${esc(x.text)}</p>${x.target ? `<p class="pl-target">Cible : ${esc(x.target)}</p>` : ''}</div></li>`).join('')}</ul></section>`;
+/* Phases en cours et à venir, chacune modifiable (dates, type, note). */
+function phasesCard(phases, today) {
+  const list = phases.filter(p => p.end >= today);
+  const rows = list
+    .map(p => {
+      const t = phaseType(p.type);
+      const weeks = Math.round((fromKey(p.end) - fromKey(p.start)) / (7 * 864e5) + 1 / 7);
+      return `<li><button type="button" class="pl-phase" data-edit-phase="${esc(p.id)}" style="--ph:${t.color}">
+        <i></i><span><strong>${esc(t.name)}</strong><small>${short(p.start)} → ${short(p.end)} · ${weeks} sem.${p.note ? ` · ${esc(p.note)}` : ''}</small></span><span class="pl-phase__e">Modifier</span></button></li>`;
+    })
+    .join('');
+  return `<section class="card an-card"><header><h2 class="card__title">Phases</h2><p class="card__sub">Touche une phase pour changer ses dates, son type ou la supprimer</p></header>
+    <ul class="pl-phases">${rows}</ul>
+    <div class="pl-actions"><button type="button" class="btn btn--sm" data-action="add-phase">Ajouter une phase</button><button type="button" class="btn btn--sm" data-action="planner">Phases automatiques</button></div></section>`;
 }
 
 /** Rendu de la partie Plan dans `host`. */
@@ -93,14 +78,14 @@ export function renderPlan(host, activities) {
   const upcoming = phases.find(p => p.start > today);
   if (!current && !upcoming) {
     host.innerHTML = `<section class="card an-card an-start"><h2 class="card__title">Aucune phase à venir</h2>
-      <p class="an-note">Le plan s’appuie sur tes phases. Place-les automatiquement selon tes courses objectifs, ou ajoute-les dans Saison.</p>
-      <button type="button" class="btn btn--primary" data-action="planner">Phases automatiques</button></section>`;
+      <p class="an-note">Le plan s’appuie sur tes phases. Place-les automatiquement selon tes courses objectifs, ou ajoute-les à la main.</p>
+      <div class="pl-actions"><button type="button" class="btn btn--primary btn--sm" data-action="planner">Phases automatiques</button><button type="button" class="btn btn--sm" data-action="add-phase">Ajouter une phase</button></div></section>`;
     return;
   }
   const ref = referenceHours(activities, today);
   const firstMonday = dateKey(mondayOf(fromKey((current || upcoming).start)));
   const weeks = planHorizon(firstMonday, 40)
-    .map(m => planWeek(m, activities, ref))
+    .map(m => planWeek(m, ref))
     .filter(Boolean);
   if (!weeks.length) {
     host.innerHTML = '<p class="an-empty card">Aucune semaine de plan.</p>';
@@ -109,7 +94,6 @@ export function renderPlan(host, activities) {
   const defaultWeek = weeks.find(w => w.monday === thisMonday) ? thisMonday : weeks[0].monday;
   if (!weekKey || !weeks.some(w => w.monday === weekKey)) weekKey = defaultWeek;
   const week = weeks.find(w => w.monday === weekKey);
-  const i = weeks.indexOf(week);
   const done = doneByWeek(activities);
   const real = done.get(week.monday) || 0;
   const goal = week.goal;
@@ -118,27 +102,19 @@ export function renderPlan(host, activities) {
 
   host.innerHTML = `
     <section class="card an-card pl-hero" style="--ph:${week.type.color}">
-      <span class="pl-hero__k">Semaine ${week.index + 1} sur ${week.count}${week.light ? ' · semaine allégée' : ''}</span>
+      <span class="pl-hero__k">Semaine du ${short(week.monday)} · ${week.index + 1} sur ${week.count}${week.light ? ' · semaine allégée' : ''}</span>
       <h2 class="pl-hero__t">${esc(week.type.name)}</h2>
       <p class="pl-hero__m">${short(week.phase.start)} → ${short(week.phase.end)}${goal ? ` · objectif <strong>${esc(goal.name)}</strong>${days !== null && days >= 0 ? ` J−${days}` : ''}` : ''}</p>
+      <p class="pl-hero__m">Cible ${dur(week.target * 60)}${real ? ` · fait ${dur(real * 60)}` : ''}</p>
       ${week.type.advice ? `<p class="pl-hero__a">${esc(week.type.advice)}</p>` : ''}
+      <button type="button" class="btn btn--sm pl-hero__b" data-edit-phase="${esc(week.phase.id)}">Modifier cette phase</button>
     </section>
 
     <section class="card an-card"><header><h2 class="card__title">Volume</h2><p class="card__sub">Cible par semaine (barre claire) et réalisé (barre pleine) ; touche une semaine pour l’afficher</p></header>
       ${volumeChart(weeks, done, week.monday, today)}
       <p class="an-note">Référence : ${nf(ref, 1)} h/sem (${s.weeklyHours ? 'réglage' : 'moyenne de tes 12 derniers mois'}), modulée selon la phase, une semaine sur quatre allégée.</p>
     </section>
-
-    <section class="card an-card"><header class="pl-week-head">
-        <button type="button" class="icon-btn icon-btn--sm" data-plan-week="${weeks[i - 1]?.monday || ''}" ${i ? '' : 'disabled'} aria-label="Semaine précédente">‹</button>
-        <div><h2 class="card__title">Semaine du ${short(week.monday)}</h2><p class="card__sub">Cible ${dur(week.target * 60)}${real ? ` · fait ${dur(real * 60)}` : ''} · ${esc(family(week.main).name)} en principal, ${esc(family(week.second).name)} en complément</p></div>
-        <button type="button" class="icon-btn icon-btn--sm" data-plan-week="${weeks[i + 1]?.monday || ''}" ${i < weeks.length - 1 ? '' : 'disabled'} aria-label="Semaine suivante">›</button>
-      </header>
-      ${real && week.target ? `<div class="pl-progress"><span style="width:${Math.min(100, (100 * real) / week.target)}%"></span></div>` : ''}
-      <ol class="pl-days">${week.days.map(d => dayRow(d, activities, today)).join('')}</ol>
-      <p class="an-note">Touche une séance pour son contenu et ses cibles (FC max ${s.hrMax}, repos ${s.hrRest}).</p>
-    </section>
-    ${sessionsCard(week)}`;
+    ${phasesCard(phases, today)}`;
 }
 
 /** Semaine choisie dans le graphique ou avec ‹ ›. */

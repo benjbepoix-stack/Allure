@@ -218,9 +218,18 @@ function wait() {
   if (first) handlers.onWaiting();
 }
 
+/* Application des données reçues : une erreur d'affichage ne doit pas interrompre la synchronisation. */
+function applyRemote(node) {
+  try {
+    handlers.onRemote(node, pendingSlices());
+  } catch (error) {
+    console.error('[firebase] application des données reçues', error);
+  }
+}
+
 function goReady(node) {
   waiting = false;
-  if (hasCarnetData(node)) handlers.onRemote(node, pendingSlices());
+  if (hasCarnetData(node)) applyRemote(node);
   // Nœud migré sans données de Carnet : celles de l'appareil deviennent la référence.
   else Object.assign(buffer, handlers.getSnapshot(), buffer);
   ready = true;
@@ -298,7 +307,7 @@ function listen(u) {
       if (token !== session) return;
       latest = snap.val();
       if (ready) {
-        if (latest && typeof latest === 'object') handlers.onRemote(latest, pendingSlices());
+        if (latest && typeof latest === 'object') applyRemote(latest);
         return;
       }
       if (!starting) start(token);

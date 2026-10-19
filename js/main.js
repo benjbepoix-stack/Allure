@@ -33,6 +33,16 @@ const SYNCED_KEY = 'allure_synced_once';
 const LAST_UID = 'allure_last_uid';
 let currentView = 'zoomView';
 
+/* Affichage d'une vue : une erreur d'affichage ne doit jamais bloquer la synchronisation ni l'import. */
+function show(id) {
+  try {
+    VIEWS[id].show();
+  } catch (error) {
+    console.error(`[vue] ${id}`, error);
+    toastError('Affichage incomplet de cette page. Vos données sont conservées.');
+  }
+}
+
 function switchView(id, { scroll = true } = {}) {
   if (!VIEWS[id]) id = 'zoomView';
   currentView = id;
@@ -45,16 +55,21 @@ function switchView(id, { scroll = true } = {}) {
   });
   $('#headerTitle').textContent = VIEWS[id].title;
   document.title = `${VIEWS[id].title} · Cadence`;
-  VIEWS[id].show();
+  show(id);
   write(VIEW_KEY, id);
   if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function onStateChange(slices) {
   if (slices.includes('objectives')) refreshPhaseTypes();
-  if (slices.includes('objectives') || slices.includes('races')) refreshPlanner();
-  const view = VIEWS[currentView];
-  if (view.slices.some(s => slices.includes(s))) view.show();
+  if (slices.includes('objectives') || slices.includes('races')) {
+    try {
+      refreshPlanner();
+    } catch (error) {
+      console.error('[phases auto]', error);
+    }
+  }
+  if (VIEWS[currentView].slices.some(s => slices.includes(s))) show(currentView);
 }
 
 /* ---------- Réglages : thème (propre à l'appareil) et compte ---------- */
@@ -211,8 +226,13 @@ function init() {
   initSeason();
   initMetrics();
   initZoom();
-  initAnalysis();
-  initPlanner();
+  // Onglet Analyse : en cas d'erreur, le reste de l'app (et la synchronisation) démarre quand même.
+  try {
+    initAnalysis();
+    initPlanner();
+  } catch (error) {
+    console.error('[analyse] initialisation', error);
+  }
   $('#addBtn').addEventListener('click', openAdd);
   $('#addList').addEventListener('click', onAddPick);
   subscribe(onStateChange);
@@ -223,7 +243,7 @@ function init() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
     else {
-      VIEWS[currentView].show();
+      show(currentView);
       retryMigration();
     }
   });

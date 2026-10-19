@@ -145,7 +145,7 @@
       <div class="an-head">
         <button type="button" class="btn btn--primary btn--sm" id="analysisImport"><span>Importer l’export RunGap</span></button>
         <button type="button" class="chip-btn" id="analysisHr" aria-label="Réglages de l’analyse">FC</button>
-        <input type="file" id="analysisFile" accept=".csv,text/csv" hidden>
+        <input type="file" id="analysisFile" accept=".csv,.txt,text/csv,text/plain,text/comma-separated-values,application/csv" hidden>
       </div>
       <p class="an-info" id="analysisInfo"></p>
       <div class="segmented an-modes" role="radiogroup" id="analysisModes" aria-label="Affichage">
@@ -212,7 +212,7 @@
           <div class="field"><label class="field__label" for="ph-end">Fin</label><input class="input" id="ph-end" type="date" name="end" required></div>
         </div>
         <div class="field"><label class="field__label" for="ph-note">Note <span class="field__opt">(facultatif)</span></label><input class="input" id="ph-note" name="note" maxlength="200" placeholder="Ex. Objectif : Trail des Forts" autocomplete="off"></div>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost btn--del" id="phaseDelete" hidden>Supprimer</button><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
       </form>
     </div>
   </div>
