@@ -16,11 +16,15 @@ import { initSeason, openPhaseEditor } from './views/season.js';
 import { refreshPhaseTypes } from './views/phase-types.js';
 import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
+import { initAnalysis, renderAnalysis } from './views/analysis.js';
+import { initPlanner, openPlanner, refreshPlanner } from './views/planner.js';
+import { clearActivities } from './core/activities.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
-  metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] }
+  metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] },
+  analysisView: { title: 'Analyse', show: renderAnalysis, slices: ['objectives', 'races'] }
 };
 const VIEW_KEY = 'allure_last_view';
 // uid du compte dont le nœud (migré) a déjà été reçu sur cet appareil ('1' : ancienne base publique).
@@ -48,6 +52,7 @@ function switchView(id, { scroll = true } = {}) {
 
 function onStateChange(slices) {
   if (slices.includes('objectives')) refreshPhaseTypes();
+  if (slices.includes('objectives') || slices.includes('races')) refreshPlanner();
   const view = VIEWS[currentView];
   if (view.slices.some(s => slices.includes(s))) view.show();
 }
@@ -84,6 +89,11 @@ function initSettings() {
     setThemeChoice(t);
     renderThemeSwitch();
   });
+  $('#settingsSheet').addEventListener('click', e => {
+    if (!e.target.closest('[data-action="planner"]')) return;
+    closeSheet('settingsSheet');
+    openPlanner();
+  });
   $('#loginBtn').addEventListener('click', () => {
     closeSheet('settingsSheet');
     showAuth();
@@ -110,6 +120,7 @@ function onUser(user) {
       // Autre compte que le précédent sur cet appareil : on repart d'une base vide.
       clearPending();
       resetLocal();
+      clearActivities();
     } else if (readText(SYNCED_KEY, '') !== user.uid) {
       // Modifications faites sans ce compte (appareil jamais synchronisé avec lui) : jamais envoyées.
       clearPending();
@@ -169,6 +180,7 @@ function onAddPick(e) {
   closeSheet('addSheet');
   if (kind === 'race') return openRaceEditor(null, { date: day });
   if (kind === 'phase') return openPhaseEditor(null, { start: day });
+  if (kind === 'plan') return openPlanner();
   if (kind === 'measure') return openMeasureSheet();
   // Poids et FTP : feuille de saisie, date du jour affiché si elle n'est pas dans le futur.
   openValueSheet(kind, day && day <= todayKey() ? day : todayKey());
@@ -199,6 +211,8 @@ function init() {
   initSeason();
   initMetrics();
   initZoom();
+  initAnalysis();
+  initPlanner();
   $('#addBtn').addEventListener('click', openAdd);
   $('#addList').addEventListener('click', onAddPick);
   subscribe(onStateChange);
