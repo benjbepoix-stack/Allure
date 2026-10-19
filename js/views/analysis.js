@@ -468,8 +468,6 @@ function renderHead(list, range) {
   $('#analysisInfo').innerHTML = list.length
     ? `Dernière activité : ${formatKey(last.date, { day: 'numeric', month: 'short', year: 'numeric' })} · ${nf(list.length)} activités${info?.at ? ` · import du ${new Date(info.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '')}` : ''}`
     : 'Aucune activité importée sur cet appareil.';
-  const s = analysisSettings();
-  $('#analysisHr').textContent = `FC ${s.hrMax} / ${s.hrRest}`;
   $$('#analysisModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
   $('#analysisBar').hidden = !list.length || mode === 'plan';
   $('#analysisPeriod').value = period;
