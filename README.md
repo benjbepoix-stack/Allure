@@ -13,7 +13,20 @@ Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **
 
 Types de phase : le menu « Phase » de l'éditeur (lien « Modifier la liste ») et ⚙︎ › Réglages ouvrent la liste des types : ajouter, renommer (nom et nom court), changer la couleur, la charge (hauteur des barres de l'année) et le conseil, classer dans « Préparation spécifique », réordonner ou retirer. Un type retiré qui sert encore à des phases est seulement masqué du menu : ces phases gardent leur nom et leur couleur.
 
-Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, mensurations, historiques) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, mensurations, historiques), **Analyse** (export RunGap) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+## Analyse (export RunGap)
+Onglet **Analyse** : « Importer l’export RunGap » lit le CSV complet exporté de RunGap (toutes les séances, tous sports). À chaque mise à jour, on redépose le fichier entier : seules les activités plus récentes que la dernière connue sont ajoutées ; les doublons Suunto / Garmin (départs à moins de 10 min) sont fusionnés. Les activités restent **sur l’appareil** (`allure_activities`, ~100 Ko pour 1 200 séances) : le nœud Firebase partagé avec Carnet n’accepte pas de nouvelle tranche.
+
+Périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phases qui se suivent, coupé après une phase de transition), avec ‹ › pour remonter dans le temps.
+- Forme (42 j), fatigue (7 j) et fraîcheur : charge de chaque séance en TRIMP de Banister, estimée depuis la FC moyenne et la durée (l’export ne donne pas le temps par zone). Phases de Cadence en bandeaux, courses en repères.
+- Volume par sport (heures par jour ou par semaine), intensité facile / modéré / dur (FC moyenne de la séance, < 65 % et ≥ 75 % de la FC de réserve).
+- Repos : une case par jour, jours de repos par semaine, alerte au-delà de N jours d’affilée sans repos.
+- Bilan des phases (h/sem, repos, part en dur, évolution de la forme), jour des courses (forme et fraîcheur le matin), efficacité en course (m par battement), puissance / FC, records (★ record absolu).
+- Réglages (bouton « FC ») : FC max, FC de repos, seuil d’alerte, stockés dans `objectives.analysis` (synchronisés).
+
+## Phases automatiques
+Ajouter › **Phases automatiques** (ou ⚙︎ › Réglages) : chaque course à venir est classée **Objectif**, **Préparation** (défaut) ou **Ne compte pas** (aussi dans la fiche de la course, champ « Importance » ; stocké dans `objectives.racePriority`). Seuls les objectifs placent les phases, à rebours : foncier, spécifique volume puis intensité (6 semaines), affûtage de 7 à 14 jours selon distance et D+ (≥ 60 km ou ≥ 2 500 m D+ : 14 j ; ≥ 21 km ou ≥ 1 000 m : 10 j), récupération après chaque objectif (raccourcie si le suivant est proche) et coupure de 2 semaines après le dernier. « Appliquer ce plan » remplace les phases à partir d’aujourd’hui (confirmation) ; les phases passées restent, celle en cours s’arrête la veille ou est prolongée si le plan commence par le même type.
+
 HTML / CSS / JavaScript purs (modules ES), sans build. Issue de la partie sport de **Carnet**.
 
 ## Compte

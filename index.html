@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="css/views/zoom.css">
   <link rel="stylesheet" href="css/views/races.css">
   <link rel="stylesheet" href="css/views/metrics.css">
+  <link rel="stylesheet" href="css/views/analysis.css">
   <link rel="stylesheet" href="css/allure.css">
 
   <script type="module" src="js/main.js"></script>
@@ -139,6 +140,30 @@
       </section>
     </section>
 
+    <!-- ================= ANALYSE : export RunGap ================= -->
+    <section id="analysisView" class="view" hidden aria-labelledby="headerTitle">
+      <div class="an-head">
+        <button type="button" class="btn btn--primary btn--sm" id="analysisImport"><span>Importer l’export RunGap</span></button>
+        <button type="button" class="chip-btn" id="analysisHr" aria-label="Réglages de l’analyse">FC</button>
+        <input type="file" id="analysisFile" accept=".csv,text/csv" hidden>
+      </div>
+      <p class="an-info" id="analysisInfo"></p>
+      <div class="segmented an-periods" role="radiogroup" id="analysisPeriods" aria-label="Période">
+        <button type="button" role="radio" data-period="month">Mois</button>
+        <button type="button" role="radio" data-period="3m">3 mois</button>
+        <button type="button" role="radio" data-period="6m">6 mois</button>
+        <button type="button" role="radio" data-period="12m">12 mois</button>
+        <button type="button" role="radio" data-period="year">Année</button>
+        <button type="button" role="radio" data-period="season">Saison</button>
+      </div>
+      <div class="an-nav" id="analysisNav" hidden>
+        <button type="button" class="icon-btn icon-btn--sm" id="analysisPrev" aria-label="Période précédente"><span data-icon="chevronLeft" data-size="18"></span></button>
+        <span class="an-nav__label" id="analysisRange"></span>
+        <button type="button" class="icon-btn icon-btn--sm" id="analysisNext" aria-label="Période suivante"><span data-icon="chevronRight" data-size="18"></span></button>
+      </div>
+      <div class="an-body" id="analysisBody" aria-live="polite"></div>
+    </section>
+
   </main>
 
   <!-- Barre du bas : Saison (zoom) / Suivi, et Ajouter -->
@@ -146,6 +171,7 @@
     <div class="dock__tabs">
       <button type="button" class="dock__tab is-active" data-view="zoomView" aria-current="page"><span data-icon="calendar" data-size="18"></span><span>Saison</span></button>
       <button type="button" class="dock__tab" data-view="metricsView"><span data-icon="body" data-size="18"></span><span>Suivi</span></button>
+      <button type="button" class="dock__tab" data-view="analysisView"><span data-icon="chart" data-size="18"></span><span>Analyse</span></button>
     </div>
     <button type="button" class="btn btn--primary dock__add" id="addBtn"><span data-icon="plus" data-size="20"></span><span>Ajouter</span></button>
   </nav>
@@ -160,6 +186,7 @@
       <div class="add-list" id="addList">
         <button type="button" class="add-opt" data-add="race"><span class="add-opt__ic" data-icon="flag"></span><span><strong>Course</strong><span id="addRaceSub">Nom, sport, date, distance</span></span></button>
         <button type="button" class="add-opt" data-add="phase"><span class="add-opt__ic add-opt__ic--phase" data-icon="calendar"></span><span><strong>Phase d’entraînement</strong><span id="addPhaseSub">Enchaîne après la dernière phase</span></span></button>
+        <button type="button" class="add-opt" data-add="plan"><span class="add-opt__ic add-opt__ic--phase" data-icon="sparkle"></span><span><strong>Phases automatiques</strong><span>Calées sur tes courses objectifs</span></span></button>
         <button type="button" class="add-opt" data-add="weight"><span class="add-opt__ic" data-icon="chart"></span><span><strong>Poids</strong><span id="addWeightSub">Mesure du jour</span></span></button>
         <button type="button" class="add-opt" data-add="ftp"><span class="add-opt__ic" data-icon="sparkle"></span><span><strong>Test FTP</strong><span id="addFtpSub">Puissance seuil vélo</span></span></button>
         <button type="button" class="add-opt" data-add="measure"><span class="add-opt__ic" data-icon="body"></span><span><strong>Mensurations</strong><span>Mannequin, 6 zones</span></span></button>
@@ -232,6 +259,7 @@
           
           
           <div class="field"><label class="field__label" for="r-distance">Distance · km</label><input class="input" id="r-distance" name="distance" inputmode="decimal" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="r-priority">Importance</label><select class="input select" id="r-priority" name="priority"><option value="A">Objectif</option><option value="B">Préparation</option><option value="C">Ne compte pas</option></select></div>
           
           
           
@@ -302,12 +330,45 @@
         <p class="field__label">Phases d’entraînement</p>
         <button type="button" class="btn btn--soft btn--block" data-action="phase-types">Modifier la liste des types de phase</button>
         <p class="settings-hint">Ajouter, renommer, recolorer, réordonner ou retirer des types.</p>
+        <button type="button" class="btn btn--soft btn--block" data-action="planner">Phases automatiques</button>
+        <p class="settings-hint">Placer les phases selon tes courses objectifs.</p>
         <p class="field__label">Compte</p>
         <div class="settings-account">
           <p class="settings-account__line" id="accountLine">Connexion…</p>
           <button type="button" class="btn btn--soft btn--block" id="loginBtn" hidden>Se connecter</button>
           <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Réglages de l'analyse : FC de référence, alerte repos -->
+  <div class="sheet-backdrop" id="analysisSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="analysisTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="analysisTitle">Réglages de l’analyse</h2><p class="sheet__sub">Servent à estimer la charge et l’intensité de chaque séance.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form" id="analysisForm" novalidate>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="a-hrmax">FC max · bpm</label><input class="input" id="a-hrmax" name="hrMax" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="a-hrrest">FC de repos · bpm</label><input class="input" id="a-hrrest" name="hrRest" inputmode="numeric" autocomplete="off"></div>
+          <div class="field field--full"><label class="field__label" for="a-streak">Alerte après … jours sans repos</label><input class="input" id="a-streak" name="streak" inputmode="numeric" autocomplete="off"></div>
+        </div>
+        <p class="field-error" id="analysisFormError" role="alert"></p>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Phases automatiques : courses qui comptent + aperçu du plan -->
+  <div class="sheet-backdrop" id="planSheet" hidden>
+    <div class="sheet sheet--tall" role="dialog" aria-modal="true" aria-labelledby="planTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="planTitle">Phases automatiques</h2><p class="sheet__sub">Les phases sont calées pour arriver au pic de forme le jour de chaque objectif.</p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="sheet__scroll">
+        <p class="field__label">Courses à venir</p>
+        <div class="plan-races" id="planRaces"></div>
+        <div id="planPreview"></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Fermer</button><button type="button" class="btn btn--primary" id="planApply">Appliquer ce plan</button></div>
       </div>
     </div>
   </div>

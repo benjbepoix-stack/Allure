@@ -5,6 +5,7 @@ import { state, commit } from '../core/store.js';
 import { RACE_SPORTS } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
+import { racePriority, withPriority } from '../core/planner.js';
 import { toast, toastError } from '../ui/toast.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
 
@@ -77,6 +78,7 @@ export function openRaceEditor(id = null, { date = '' } = {}) {
   form.elements.target.value = wheelValue(r?.target);
   form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';
+  form.elements.priority.value = r ? racePriority(r.id) : 'B';
   openSheet('raceSheet');
 }
 
@@ -117,7 +119,8 @@ function onSubmit(e) {
   };
   if (existing) state.races[state.races.indexOf(existing)] = race;
   else state.races.push(race);
-  if (commit('races') === false) return;
+  state.objectives = withPriority(race.id, v.priority);
+  if (commit(['races', 'objectives']) === false) return;
   closeSheet('raceSheet');
   toast(existing ? 'Course modifiée' : 'Course ajoutée');
   onSaved(race);
