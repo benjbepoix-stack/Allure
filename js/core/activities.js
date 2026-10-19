@@ -28,13 +28,16 @@ const COLS = {
   hrMax: 'max heartrate',
   power: 'avg power',
   gain: 'elevationgain(m)',
+  minEle: 'min elevation(m)',
   speed: 'avg speed(m/s)',
   title: 'title',
   source: 'source'
 };
 
 /* Ordre des champs d'une activité stockée (tableau compact). */
-const FIELDS = ['t', 'date', 'time', 'activity', 'duration', 'distance', 'hr', 'hrMax', 'power', 'gain', 'speed', 'title'];
+const FIELDS = ['t', 'date', 'time', 'activity', 'duration', 'distance', 'hr', 'hrMax', 'power', 'gain', 'speed', 'title', 'minEle'];
+/* Version du format stocké : un import d'un format plus ancien remplace tout (champ ajouté). */
+const VERSION = 2;
 
 let cache = null;
 
@@ -109,6 +112,7 @@ export function readExport(text) {
       hrMax: Math.round(num(get(r, 'hrMax'))),
       power: Math.round(num(get(r, 'power'))),
       gain: Math.round(num(get(r, 'gain'))),
+      minEle: Math.round(num(get(r, 'minEle'))),
       speed: num(get(r, 'speed')),
       title: get(r, 'title').trim().slice(0, 80),
       source: get(r, 'source').trim()
@@ -163,12 +167,13 @@ function save(list) {
 export function mergeExport(text) {
   const incoming = readExport(text);
   if (!incoming.length) throw new Error('Aucune activité trouvée dans ce fichier.');
-  const current = getActivities();
+  const outdated = importInfo()?.v !== VERSION;
+  const current = outdated ? [] : getActivities();
   const last = current.length ? current[current.length - 1].t : -Infinity;
   const fresh = incoming.filter(a => a.t - last >= DUPLICATE_GAP);
   const list = current.concat(fresh);
   save(list);
-  write(META_KEY, { at: Date.now(), added: fresh.length, total: list.length });
+  write(META_KEY, { at: Date.now(), added: fresh.length, total: list.length, v: VERSION });
   return { added: fresh.length, total: list.length, first: !current.length };
 }
 

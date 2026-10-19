@@ -23,7 +23,9 @@ export function analysisSettings() {
   return {
     hrMax,
     hrRest: Math.min(int(raw.hrRest, 30, 100, DEFAULT_SETTINGS.hrRest), hrMax - 40),
-    streakAlert: int(raw.streakAlert, 3, 30, DEFAULT_SETTINGS.streakAlert)
+    streakAlert: int(raw.streakAlert, 3, 30, DEFAULT_SETTINGS.streakAlert),
+    // Volume de référence du plan (h/sem) ; 0 : calculé depuis les activités.
+    weeklyHours: Number(raw.weeklyHours) >= 1 && Number(raw.weeklyHours) <= 40 ? Math.round(Number(raw.weeklyHours) * 2) / 2 : 0
   };
 }
 
@@ -33,6 +35,7 @@ export const FAMILIES = [
   { id: 'trail', name: 'Trail', color: '#f2a516' },
   { id: 'bike', name: 'Vélo', color: '#3d82f6' },
   { id: 'ski', name: 'Ski de fond', color: '#14b8a6' },
+  { id: 'skiroll', name: 'Ski-roue', color: '#22a6c8' },
   { id: 'gym', name: 'Renfo', color: '#a95cf0' },
   { id: 'hike', name: 'Rando', color: '#7cbf3a' },
   { id: 'other', name: 'Autre', color: '#8b90a0' }
@@ -47,17 +50,38 @@ const FAMILY_OF = {
   'Mountain Biking': 'bike',
   'Gravel Cycling': 'bike',
   'Cross Country Skiing': 'ski',
-  'Roller Skiing': 'ski',
+  'Roller Skiing': 'skiroll',
   'Weight Training': 'gym',
   'Indoor Sport & Fitness': 'gym',
   'Climbing': 'gym',
   'Hiking': 'hike',
   'Walking': 'hike'
 };
-export const familyOf = a => FAMILY_OF[a.activity] || 'other';
+/*
+ * Ski de fond et ski-roue arrivent tous deux en « Cross Country Skiing » : c'est du
+ * ski de fond de novembre à avril au-dessus de 700 m (point le plus bas de la
+ * sortie), du ski-roue sinon. Ancien import sans altitude : selon le mois seul.
+ */
+const SNOW_MONTHS = new Set([11, 12, 1, 2, 3, 4]);
+const SNOW_ALTITUDE = 700;
+function skiKind(a) {
+  const month = Number(a.date.slice(5, 7));
+  if (!SNOW_MONTHS.has(month)) return 'skiroll';
+  if (!a.minEle) return month === 11 || month === 4 ? 'skiroll' : 'ski';
+  return a.minEle >= SNOW_ALTITUDE ? 'ski' : 'skiroll';
+}
+export const familyOf = a => {
+  const f = FAMILY_OF[a.activity] || 'other';
+  return f === 'ski' ? skiKind(a) : f;
+};
+/* Sport d'une course de Cadence -> sport de l'export. */
+export const RACE_FAMILY = { 'Course à pied': 'run', 'Trail': 'trail', 'Cyclisme': 'bike', 'VTT': 'bike', 'Gravel': 'bike', 'Ski de fond': 'ski', 'Ski-roue': 'skiroll', 'Escalade': 'gym' };
 export const family = id => FAMILIES.find(f => f.id === id) || FAMILIES[FAMILIES.length - 1];
 
 /* Intensité supposée d'une séance sans FC (part de la FC de réserve). */
+/** Sport de la saison de neige ? (ski de fond l'hiver, ski-roue le reste de l'année) */
+export const isSnowMonth = key => SNOW_MONTHS.has(Number(key.slice(5, 7))) && !['11', '04'].includes(key.slice(5, 7));
+
 const NO_HR_RESERVE = { gym: 0.4, hike: 0.4, other: 0.45 };
 
 /** Part de la FC de réserve (Karvonen) de la séance, entre 0 et 1. */
@@ -244,7 +268,7 @@ export function records(list, fam) {
   if (!of.length) return null;
   const max = (arr, f) => arr.reduce((b, a) => (f(a) > f(b) ? a : b), arr[0]);
   const rec = { distance: max(of, a => a.distance), duration: max(of, a => a.duration), gain: max(of, a => a.gain) };
-  const minDist = { run: 5000, trail: 10000, bike: 30000, ski: 10000 }[fam];
+  const minDist = { run: 5000, trail: 10000, bike: 30000, ski: 10000, skiroll: 10000 }[fam];
   const fast = minDist ? of.filter(a => a.distance >= minDist && a.speed > 0) : [];
   if (fast.length) rec.speed = max(fast, a => a.speed);
   return rec;
