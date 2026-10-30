@@ -11,6 +11,8 @@ Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **
 - **Semaine** : conseil de la phase, une ligne par jour.
 - **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
 
+Inscriptions : chaque course à venir a un état d'inscription, **À faire** (rouge, par défaut), **Incomplète** (ambre) ou **Complète** (vert), à choisir sur sa fiche (échelle Jour) ou dans l'éditeur de course (champ « Inscription ») ; stocké dans `objectives.raceRegistration`. Les courses à venir portent un badge (À inscrire, Incomplète, Inscrit) ; en Année, des puces filtrent la liste par état avec le nombre de courses ; en Mois (mois courant), un rappel « Inscriptions : x à faire · y incomplètes » ouvre l'année filtrée.
+
 Types de phase : le menu « Phase » de l'éditeur (lien « Modifier la liste ») et ⚙︎ › Réglages ouvrent la liste des types : ajouter, renommer (nom et nom court), changer la couleur, la charge (hauteur des barres de l'année) et le conseil, classer dans « Préparation spécifique », réordonner ou retirer. Un type retiré qui sert encore à des phases est seulement masqué du menu : ces phases gardent leur nom et leur couleur.
 
 Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, mensurations, historiques), **Analyse** (export RunGap) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.

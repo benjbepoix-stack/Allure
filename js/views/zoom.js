@@ -15,7 +15,8 @@ import { phaseType, getPhases, phaseOn, racesOn } from '../core/season.js';
 import { readText, write } from '../services/storage.js';
 import { icon } from '../ui/icons.js';
 import { PALETTE } from '../ui/charts.js';
-import { sortedRaces, isUpcoming, sportFamily, fmtDist, wheelValue, zeroClass, raceAction, saveResult, wheelState } from './races.js';
+import { REGISTRATIONS, countRegistrations, registrationName, registrationOf } from '../core/registration.js';
+import { sortedRaces, isUpcoming, sportFamily, fmtDist, wheelValue, zeroClass, raceAction, saveResult, saveRegistration, wheelState } from './races.js';
 import { openPhaseEditor, deletePhase } from './season.js';
 
 export const LEVELS = ['Année', 'Mois', 'Semaine', 'Jour'];
@@ -26,6 +27,7 @@ const NAV_LABELS = [['Année précédente', 'Année suivante'], ['Mois précéde
 let level = 1;
 let focus = todayKey();
 let silentNext = false;
+let regFilter = ''; // filtre des courses de l'année par état d'inscription ('' = toutes)
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const daysBetween = (a, b) => Math.round((fromKey(b) - fromKey(a)) / 86400000);
@@ -130,8 +132,30 @@ function yearHTML() {
     <div class="stats-grid zstats">${stats}</div>
     ${sportsHTML}
     <h2 class="zsec">Courses ${y}</h2>
-    ${list.length ? `<div class="zlist">${[...list].reverse().map(r => raceRow(r, now, { day: true })).join('')}</div>` : '<p class="zempty">Aucune course cette année. Touchez Ajouter pour en programmer une.</p>'}`;
+    ${list.length ? racesListHTML(list, now) : '<p class="zempty">Aucune course cette année. Touchez Ajouter pour en programmer une.</p>'}`;
 }
+
+/** Courses de l'année, filtrables par état d'inscription des courses à venir. */
+function racesListHTML(list, now) {
+  const upcoming = list.filter(r => isUpcoming(r, now));
+  const n = countRegistrations(upcoming);
+  const filter = upcoming.length ? regFilter : '';
+  const shown = filter ? upcoming.filter(r => registrationOf(r.id) === filter) : list;
+  const chip = (id, label, count) =>
+    `<button type="button" class="chip-btn${id ? ` reg--${id}` : ''}" data-act="reg-filter" data-reg="${id}" aria-pressed="${filter === id}">${label}<b>${count}</b></button>`;
+  const chips = upcoming.length
+    ? `<div class="zregs" role="group" aria-label="Filtrer par inscription">${chip('', 'Toutes', list.length)}${REGISTRATIONS.map(x => chip(x.id, x.name, n[x.id])).join('')}</div>`
+    : '';
+  const rows = shown.length
+    ? `<div class="zlist">${[...shown].reverse().map(r => raceRow(r, now, { day: true })).join('')}</div>`
+    : `<p class="zempty">Aucune course à venir avec l’inscription « ${esc(registrationName(filter).toLowerCase())} ».</p>`;
+  return chips + rows;
+}
+
+const regBadge = id => {
+  const s = registrationOf(id);
+  return `<span class="reg-badge reg--${s}"><i class="reg-dot"></i>${s === 'done' ? 'Inscrit' : s === 'partial' ? 'Incomplète' : 'À inscrire'}</span>`;
+};
 
 function raceRow(r, now, { day = false } = {}) {
   const past = !isUpcoming(r, now);
@@ -140,7 +164,7 @@ function raceRow(r, now, { day = false } = {}) {
   return `<button type="button" class="zrow" data-go="day" data-key="${r.date}">
     <span class="zrow__flag">${icon('flag', 16)}</span>
     <span class="zrow__body"><strong>${esc(r.name)}</strong><span>${cap(when)} · ${esc(r.sport)}${r.distance !== '' ? ` · ${fmtDist(r)}` : ''}</span></span>
-    <span class="zrow__end${past ? '' : ' is-count'}">${right}</span></button>`;
+    ${past ? `<span class="zrow__end">${right}</span>` : `<span class="zrow__ends"><span class="zrow__end is-count">${right}</span>${regBadge(r.id)}</span>`}</button>`;
 }
 
 /* ---------- Échelle Mois : la saison ---------- */
@@ -159,6 +183,17 @@ function nowCardHTML() {
     <span class="znow__phase">${phase}</span>
     ${next ? `<span class="znow__race">${icon('flag', 14)} ${esc(next.name)} · <b>${countdownLabel(next.date)}</b></span>` : ''}
   </button>`;
+}
+
+/** Rappel des inscriptions à finaliser (toutes les courses à venir). */
+function regReminderHTML() {
+  const upcoming = sortedRaces().filter(r => isUpcoming(r));
+  const n = countRegistrations(upcoming);
+  if (!n.todo && !n.partial) return '';
+  const first = upcoming.find(r => registrationOf(r.id) !== 'done');
+  const parts = [n.todo ? `${n.todo} à faire` : '', n.partial ? `${n.partial} ${plural(n.partial, 'incomplète')}` : ''].filter(Boolean).join(' · ');
+  return `<button type="button" class="zreg" data-act="reg-open" data-key="${first.date}" data-reg="${n.todo ? 'todo' : 'partial'}">
+    <span class="zreg__k">Inscriptions</span><span class="zreg__v">${parts}</span><span class="zreg__go" aria-hidden="true">›</span></button>`;
 }
 
 function monthHTML() {
@@ -197,7 +232,7 @@ function monthHTML() {
     .join('');
   const now = new Date();
   const races = sortedRaces().filter(r => monthOf(r.date) === monthOf(focus));
-  return `${monthOf(t) === monthOf(focus) ? nowCardHTML() : ''}
+  return `${monthOf(t) === monthOf(focus) ? nowCardHTML() + regReminderHTML() : ''}
     <div class="zcal" role="group" aria-label="${esc(zoomTitle())}"><span></span>${head}${cells.join('')}</div>
     <h2 class="zsec">Phases du mois</h2>
     ${inMonth.length ? `<div class="zlist">${phaseRows}</div>` : '<p class="zempty">Aucune phase ce mois-ci. Touchez Ajouter pour en planifier une.</p>'}
@@ -245,6 +280,13 @@ function raceCardHTML(r, now) {
     <h2 class="zrace__name">${esc(r.name)}</h2>
     ${stats.length ? `<div class="zrace__stats">${stats.map(([l, v]) => `<div><span>${l}</span><strong>${esc(v)}</strong></div>`).join('')}</div>` : ''}
     ${r.notes ? `<p class="zrace__notes">${esc(r.notes)}</p>` : ''}
+    ${
+      past
+        ? ''
+        : `<div class="zrace__reg"><div class="zrace__reg-title">État de l’inscription</div><div class="segmented zregseg" role="radiogroup" aria-label="État de l’inscription">${REGISTRATIONS.map(
+            x => `<button type="button" class="reg--${x.id}" role="radio" data-act="race-reg" data-id="${esc(r.id)}" data-reg="${x.id}" aria-checked="${registrationOf(r.id) === x.id}">${x.name}</button>`
+          ).join('')}</div></div>`
+    }
     ${
       past
         ? `<div class="race-result"><div class="race-result__title">Résultat</div><div class="race-result__grid">
@@ -553,6 +595,14 @@ export function initZoom() {
         case 'phase-edit': return openPhaseEditor(id);
         case 'phase-delete': return deletePhase(id);
         case 'phase-add': return openPhaseEditor(null, { start: focus });
+        case 'race-reg': return saveRegistration(id, act.dataset.reg);
+        case 'reg-filter':
+          regFilter = act.dataset.reg;
+          return renderZoom();
+        case 'reg-open':
+          regFilter = act.dataset.reg;
+          focus = yearOf(act.dataset.key) === yearOf(todayKey()) ? todayKey() : act.dataset.key;
+          return setLevel(0, act);
       }
       return;
     }

@@ -6,6 +6,7 @@ import { RACE_SPORTS } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { racePriority, withPriority } from '../core/planner.js';
+import { registrationOf, withRegistration } from '../core/registration.js';
 import { toast, toastError } from '../ui/toast.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
 
@@ -79,6 +80,7 @@ export function openRaceEditor(id = null, { date = '' } = {}) {
   form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';
   form.elements.priority.value = r ? racePriority(r.id) : 'B';
+  form.elements.registration.value = r ? registrationOf(r.id) : 'todo';
   openSheet('raceSheet');
 }
 
@@ -120,6 +122,7 @@ function onSubmit(e) {
   if (existing) state.races[state.races.indexOf(existing)] = race;
   else state.races.push(race);
   state.objectives = withPriority(race.id, v.priority);
+  state.objectives = withRegistration(race.id, v.registration);
   if (commit(['races', 'objectives']) === false) return;
   closeSheet('raceSheet');
   toast(existing ? 'Course modifiée' : 'Course ajoutée');
@@ -139,6 +142,19 @@ export async function raceAction(action, id) {
       toast('Course supprimée');
     }
   }
+}
+
+/**
+ * Nouvel état d'inscription d'une course (fiche du jour).
+ * @returns {boolean} faux si l'enregistrement a été refusé.
+ */
+export function saveRegistration(id, status) {
+  if (!state.races.some(x => x.id === id)) return false;
+  if (registrationOf(id) === status) return true;
+  state.objectives = withRegistration(id, status);
+  if (commit('objectives') === false) return false;
+  toast('Inscription mise à jour');
+  return true;
 }
 
 /**

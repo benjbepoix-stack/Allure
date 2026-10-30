@@ -40,6 +40,9 @@
 /* ---------- Couleurs : Braise (rouge orangé → rouge vif), aussi couleur des courses ---------- */
 :root, :root[data-theme="light"] { --accent: #ff5a3c; --accent-2: #ff2d55; --accent-ink: #fff; --accent-soft: rgba(255, 74, 60, .15); --gradient-accent: linear-gradient(135deg, #ff7a3d, #ff2d55); --shadow-accent: 0 10px 24px -10px rgba(255, 45, 85, .6); --race: #ff3b4a; --race-ink: #fff; }
 :root[data-theme="light"] { --accent: #e5352b; --accent-soft: rgba(229, 53, 43, .1); --race: #ec2f3d; }
+/* États d'inscription : à faire (rouge), incomplète (ambre), complète (vert). */
+:root, :root[data-theme="light"] { --reg-todo: var(--danger); --reg-partial: var(--amber); --reg-done: #2ee6a8; }
+:root[data-theme="light"] { --reg-partial: #c98a0c; --reg-done: #0f9f70; }
 
 /* ---------- Surfaces : pleines, sans verre ni halo ---------- */
 body { background: var(--bg); }
