@@ -38,6 +38,8 @@
   <link rel="stylesheet" href="css/views/races.css">
   <link rel="stylesheet" href="css/views/metrics.css">
   <link rel="stylesheet" href="css/views/analysis.css">
+  <link rel="stylesheet" href="css/views/saison.css">
+  <link rel="stylesheet" href="css/views/catalog.css">
   <link rel="stylesheet" href="css/allure.css">
 
   <script type="module" src="js/main.js"></script>
@@ -85,20 +87,37 @@
 
     <!-- ================= ZOOM : année, mois, semaine, jour ================= -->
     <section id="zoomView" class="view" hidden aria-labelledby="headerTitle">
-      <div class="zbar-top">
-        <div class="segmented zlevels" role="radiogroup" id="zoomLevels" aria-label="Échelle">
-          <button type="button" role="radio" data-level="0">Année</button>
-          <button type="button" role="radio" data-level="1">Mois</button>
-          <button type="button" role="radio" data-level="2">Semaine</button>
-          <button type="button" role="radio" data-level="3">Jour</button>
+      <div class="segmented smodes" role="radiogroup" id="saisonModes" aria-label="Affichage">
+        <button type="button" role="radio" data-mode="plan">Plan</button>
+        <button type="button" role="radio" data-mode="cal">Calendrier</button>
+      </div>
+      <div class="scalnav" id="calNav" hidden>
+        <button type="button" class="icon-btn icon-btn--sm" id="zoomPrev" aria-label="Mois précédent"><span data-icon="chevronLeft" data-size="18"></span></button>
+        <strong class="scalnav__title" id="calTitle"></strong>
+        <button type="button" class="icon-btn icon-btn--sm" id="zoomNext" aria-label="Mois suivant"><span data-icon="chevronRight" data-size="18"></span></button>
+        <button type="button" class="chip-btn" id="zoomToday" hidden>Aujourd’hui</button>
+      </div>
+      <div class="zbody" id="zoomBody" aria-live="polite"></div>
+    </section>
+
+    <!-- ================= COURSES : catalogue (cyclosportives + ski de fond) ================= -->
+    <section id="catalogView" class="view" hidden aria-labelledby="headerTitle">
+      <div class="cat-bar">
+        <div class="segmented cat-sports" role="radiogroup" id="catSports" aria-label="Sport">
+          <button type="button" role="radio" data-sport="all">Tout</button>
+          <button type="button" role="radio" data-sport="velo">Vélo</button>
+          <button type="button" role="radio" data-sport="ski">Ski de fond</button>
         </div>
-        <div class="znav">
-          <button type="button" class="icon-btn icon-btn--sm" id="zoomPrev" aria-label="Précédent"><span data-icon="chevronLeft" data-size="18"></span></button>
-          <button type="button" class="icon-btn icon-btn--sm" id="zoomNext" aria-label="Suivant"><span data-icon="chevronRight" data-size="18"></span></button>
+        <div class="cat-filters">
+          <label class="cat-search"><span data-icon="search" data-size="16"></span><input type="search" id="catSearch" placeholder="Nom ou ville" autocomplete="off" enterkeyhint="search" aria-label="Rechercher une course"></label>
+          <button type="button" class="chip-btn cat-mine" id="catMine" aria-pressed="false">★ Ma sélection <b id="catMineCount">0</b></button>
+        </div>
+        <div class="cat-row">
+          <label class="an-select cat-region"><select id="catRegion" aria-label="Région"></select></label>
+          <span class="cat-count" id="catCount"></span>
         </div>
       </div>
-      <div class="zsub"><p class="zhint" id="zoomHint" aria-hidden="true"></p><button type="button" class="chip-btn" id="zoomToday" hidden>Aujourd’hui</button></div>
-      <div class="zbody" id="zoomBody" aria-live="polite"></div>
+      <div class="cat-body" id="catalogBody"></div>
     </section>
 
     <!-- ================= SUIVI : mesures ================= -->
@@ -169,10 +188,11 @@
 
   </main>
 
-  <!-- Barre du bas : Saison (zoom) / Suivi, et Ajouter -->
+  <!-- Barre du bas : Saison / Courses / Suivi / Analyse, et Ajouter -->
   <nav class="dock" aria-label="Navigation principale">
     <div class="dock__tabs">
       <button type="button" class="dock__tab is-active" data-view="zoomView" aria-current="page"><span data-icon="calendar" data-size="18"></span><span>Saison</span></button>
+      <button type="button" class="dock__tab" data-view="catalogView"><span data-icon="flag" data-size="18"></span><span>Courses</span></button>
       <button type="button" class="dock__tab" data-view="metricsView"><span data-icon="body" data-size="18"></span><span>Suivi</span></button>
       <button type="button" class="dock__tab" data-view="analysisView"><span data-icon="chart" data-size="18"></span><span>Analyse</span></button>
     </div>
@@ -194,6 +214,20 @@
         <button type="button" class="add-opt" data-add="ftp"><span class="add-opt__ic" data-icon="sparkle"></span><span><strong>Test FTP</strong><span id="addFtpSub">Puissance seuil vélo</span></span></button>
         <button type="button" class="add-opt" data-add="measure"><span class="add-opt__ic" data-icon="body"></span><span><strong>Mensurations</strong><span>Mannequin, 6 zones</span></span></button>
       </div>
+    </div>
+  </div>
+
+  <!-- Détail d'un jour ou d'une semaine (ouvert depuis la Saison) -->
+  <div class="sheet-backdrop" id="daySheet" hidden>
+    <div class="sheet sheet--tall" role="dialog" aria-modal="true" aria-labelledby="dayTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head">
+        <button type="button" class="icon-btn icon-btn--sm" id="dayPrev" aria-label="Précédent"><span data-icon="chevronLeft" data-size="18"></span></button>
+        <h2 class="sheet__title dsheet__title" id="dayTitle"></h2>
+        <button type="button" class="icon-btn icon-btn--sm" id="dayNext" aria-label="Suivant"><span data-icon="chevronRight" data-size="18"></span></button>
+        <button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button>
+      </header>
+      <div class="sheet__scroll" id="dayBody" aria-live="polite"></div>
     </div>
   </div>
 

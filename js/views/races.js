@@ -64,7 +64,7 @@ const toCalendarEvent = r => ({
 
 /* ---------- Formulaire ---------- */
 /** Ouvre l'éditeur : course existante (`id`) ou nouvelle course, à la date `date` si fournie. */
-export function openRaceEditor(id = null, { date = '' } = {}) {
+export function openRaceEditor(id = null, { date = '', prefill = null } = {}) {
   const r = id ? state.races.find(x => x.id === id) : null;
   if (id && !r) return toastError('Cette course n’existe plus.');
   const form = $('#raceForm');
@@ -76,6 +76,9 @@ export function openRaceEditor(id = null, { date = '' } = {}) {
   // Nouvelle course : sport de la dernière course saisie, un choix de moins à faire.
   else if (state.races.length) form.elements.sport.value = [...state.races].sort((a, b) => a.date.localeCompare(b.date)).at(-1).sport;
   if (!r && date) form.elements.date.value = date;
+  // Épreuve choisie dans le catalogue : nom, sport, date (souvent estimée, à vérifier), lieu, notes.
+  if (!r && prefill) ['name', 'sport', 'date', 'location', 'notes'].forEach(k => prefill[k] && (form.elements[k].value = prefill[k]));
+  if (!r && prefill?.date && prefill.notes.includes('Date estimée')) $('#raceSheetTitle').textContent = 'Date à vérifier';
   form.elements.target.value = wheelValue(r?.target);
   form.elements.target.classList.toggle('is-zero', !toWheel(r?.target));
   form.elements.target.dataset.orig = r?.target || '';
