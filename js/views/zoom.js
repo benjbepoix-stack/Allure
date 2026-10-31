@@ -1,33 +1,34 @@
 /*
- * Vue Zoom : un seul calendrier, quatre échelles.
- * - Année : bilan (une barre par mois colorée par les phases, chiffres, sports, courses).
- * - Mois : jours colorés par phase, phases et courses du mois.
- * - Semaine : une ligne par jour.
- * - Jour : fiche de la course (calendrier, modifier, résultat) et de la phase (conseil).
- * On plonge en touchant un mois / une semaine / un jour, ou en écartant deux doigts ;
- * on recule en pinçant ou avec le sélecteur d'échelle.
+ * Vue Saison : deux affichages.
+ * - Plan (par défaut) : prochain objectif (J−, progression de la préparation),
+ *   plan semaine par semaine coloré par les phases, cette semaine, puis tout
+ *   ce qui arrive (courses et changements de phase) mois par mois.
+ * - Calendrier : un mois en grille (glisser ou ‹ › pour changer de mois).
+ * Toucher un jour, une semaine, une course ou une barre ouvre la fiche du jour
+ * ou de la semaine dans une feuille (avec ‹ › pour passer au suivant).
  */
-import { $, esc, parseNumber, round, plural } from '../core/utils.js';
+import { $, esc, round, plural } from '../core/utils.js';
 import { addDays, dateKey, formatDate, formatKey, fromKey, mondayOf, todayKey } from '../core/dates.js';
 import { state } from '../core/store.js';
 import { MEASURE_FIELDS } from '../core/schema.js';
 import { phaseType, getPhases, phaseOn, racesOn } from '../core/season.js';
+import { racePriority } from '../core/planner.js';
 import { readText, write } from '../services/storage.js';
 import { icon } from '../ui/icons.js';
-import { PALETTE } from '../ui/charts.js';
+import { openSheet, isOpen } from '../ui/dialog.js';
 import { REGISTRATIONS, countRegistrations, registrationName, registrationOf } from '../core/registration.js';
-import { sortedRaces, isUpcoming, sportFamily, fmtDist, wheelValue, zeroClass, raceAction, saveResult, saveRegistration, wheelState } from './races.js';
+import { sortedRaces, isUpcoming, fmtDist, wheelValue, zeroClass, raceAction, saveResult, saveRegistration, wheelState } from './races.js';
 import { openPhaseEditor, deletePhase } from './season.js';
+import { openPlanner } from './planner.js';
 
-export const LEVELS = ['Année', 'Mois', 'Semaine', 'Jour'];
-const LEVEL_KEY = 'allure_zoom_level';
-const HINTS = ['Glissez pour changer d’année', 'Glissez pour changer de mois', 'Glissez pour changer de semaine', 'Glissez pour changer de jour'];
-const NAV_LABELS = [['Année précédente', 'Année suivante'], ['Mois précédent', 'Mois suivant'], ['Semaine précédente', 'Semaine suivante'], ['Jour précédent', 'Jour suivant']];
+const MODE_KEY = 'allure_saison_mode';
 
-let level = 1;
-let focus = todayKey();
+let mode = 'plan'; // 'plan' | 'cal'
+let focus = todayKey(); // mois affiché par le calendrier
+let sheet = { kind: 'day', key: todayKey() }; // fiche ouverte : jour ou semaine
 let silentNext = false;
-let regFilter = ''; // filtre des courses de l'année par état d'inscription ('' = toutes)
+let regFilter = ''; // filtre des courses par état d'inscription ('' = toutes)
+let onCatalog = () => {};
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const daysBetween = (a, b) => Math.round((fromKey(b) - fromKey(a)) / 86400000);
@@ -62,96 +63,9 @@ function weekInPhase(p, key) {
   return [Math.min(total, Math.floor(daysBetween(p.start, key) / 7) + 1), total];
 }
 
-export function zoomTitle() {
-  const d = fromKey(focus);
-  if (level === 0) return String(d.getFullYear());
-  if (level === 1) return cap(formatDate(d, { month: 'long', year: 'numeric' }));
-  if (level === 2) return `Semaine ${isoWeek(focus)}`;
-  return cap(formatDate(d, { weekday: 'short', day: 'numeric', month: 'short' }));
-}
+const monthTitle = key => cap(formatDate(fromKey(key), { month: 'long', year: 'numeric' }));
 
-/** La période affichée contient-elle aujourd'hui ? */
-function showsToday() {
-  const t = todayKey();
-  if (level === 0) return yearOf(t) === yearOf(focus);
-  if (level === 1) return monthOf(t) === monthOf(focus);
-  if (level === 2) return dateKey(mondayOf(fromKey(t))) === dateKey(mondayOf(fromKey(focus)));
-  return t === focus;
-}
-
-/* ---------- Échelle Année : le bilan ---------- */
-function yearHTML() {
-  const y = yearOf(focus);
-  const phases = getPhases();
-  const t = todayKey();
-  const bars = [];
-  for (let m = 0; m < 12; m++) {
-    const first = new Date(y, m, 1, 12);
-    const count = new Date(y, m + 1, 0).getDate();
-    const seg = {};
-    let load = 0;
-    for (let d = 0; d < count; d++) {
-      const p = phaseOn(dateKey(addDays(first, d)), phases);
-      if (!p) continue;
-      seg[p.type] = (seg[p.type] || 0) + 1;
-      load += phaseType(p.type).load; // charge relative du jour : hauteur de la barre
-    }
-    const key = dateKey(first);
-    const races = state.races.filter(r => monthOf(r.date) === monthOf(key));
-    const h = Math.max(6, Math.round((load / count) * 100));
-    const label = [cap(formatDate(first, { month: 'long' })), ...Object.keys(seg).map(k => phaseType(k).short), races.length ? `${races.length} ${plural(races.length, 'course')}` : ''].filter(Boolean).join(', ');
-    bars.push(`<button type="button" class="zbar${monthOf(t) === monthOf(key) ? ' is-now' : ''}" data-go="month" data-key="${key}" aria-label="${esc(label)}">
-      <span class="zbar__fill" style="height:${h}%">${Object.entries(seg).map(([k, n]) => `<i class="phase--${k}" style="flex:${n}"></i>`).join('')}</span>
-      ${races.length ? '<span class="zbar__race"></span>' : ''}</button>`);
-  }
-  const months = Array.from({ length: 12 }, (_, m) => `<span>${formatDate(new Date(y, m, 1), { month: 'narrow' })}</span>`).join('');
-
-  const now = new Date();
-  const list = sortedRaces().filter(r => yearOf(r.date) === y);
-  const upcoming = list.filter(r => isUpcoming(r, now)).length;
-  const km = list.reduce((s, r) => s + (parseNumber(r.distance) || 0), 0);
-  const cost = list.reduce((s, r) => s + (parseNumber(r.price) || 0), 0);
-  const stats = [
-    [list.length, plural(list.length, 'course')],
-    [upcoming, 'à venir'],
-    [list.length - upcoming, plural(list.length - upcoming, 'terminée')],
-    [`${round(km, 0).toLocaleString('fr-FR')} km`, 'distance'],
-    [`${round(cost, 2).toLocaleString('fr-FR')} €`, 'inscriptions']
-  ].map(([v, l]) => `<div class="stat"><strong>${esc(v)}</strong><span>${l}</span></div>`).join('');
-
-  const counts = {};
-  list.forEach(r => (counts[sportFamily(r.sport)] = (counts[sportFamily(r.sport)] || 0) + 1));
-  const sports = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'));
-  const sportsHTML = sports.length
-    ? `<div class="zsports" aria-hidden="true">${sports.map(([, n], i) => `<i style="flex:${n};background:${PALETTE[i % PALETTE.length]}"></i>`).join('')}</div>
-       <div class="zlegend">${sports.map(([k, n], i) => `<span><i style="background:${PALETTE[i % PALETTE.length]}"></i>${esc(k)} ${n}</span>`).join('')}</div>`
-    : '';
-
-  return `<div class="zyear" role="group" aria-label="Mois de ${y}">${bars.join('')}</div><div class="zyear__months" aria-hidden="true">${months}</div>
-    <h2 class="zsec">Bilan ${y}</h2>
-    <div class="stats-grid zstats">${stats}</div>
-    ${sportsHTML}
-    <h2 class="zsec">Courses ${y}</h2>
-    ${list.length ? racesListHTML(list, now) : '<p class="zempty">Aucune course cette année. Touchez Ajouter pour en programmer une.</p>'}`;
-}
-
-/** Courses de l'année, filtrables par état d'inscription des courses à venir. */
-function racesListHTML(list, now) {
-  const upcoming = list.filter(r => isUpcoming(r, now));
-  const n = countRegistrations(upcoming);
-  const filter = upcoming.length ? regFilter : '';
-  const shown = filter ? upcoming.filter(r => registrationOf(r.id) === filter) : list;
-  const chip = (id, label, count) =>
-    `<button type="button" class="chip-btn${id ? ` reg--${id}` : ''}" data-act="reg-filter" data-reg="${id}" aria-pressed="${filter === id}">${label}<b>${count}</b></button>`;
-  const chips = upcoming.length
-    ? `<div class="zregs" role="group" aria-label="Filtrer par inscription">${chip('', 'Toutes', list.length)}${REGISTRATIONS.map(x => chip(x.id, x.name, n[x.id])).join('')}</div>`
-    : '';
-  const rows = shown.length
-    ? `<div class="zlist">${[...shown].reverse().map(r => raceRow(r, now, { day: true })).join('')}</div>`
-    : `<p class="zempty">Aucune course à venir avec l’inscription « ${esc(registrationName(filter).toLowerCase())} ».</p>`;
-  return chips + rows;
-}
-
+/* ---------- Lignes de course ---------- */
 const regBadge = id => {
   const s = registrationOf(id);
   return `<span class="reg-badge reg--${s}"><i class="reg-dot"></i>${s === 'done' ? 'Inscrit' : s === 'partial' ? 'Incomplète' : 'À inscrire'}</span>`;
@@ -168,23 +82,6 @@ function raceRow(r, now, { day = false } = {}) {
 }
 
 /* ---------- Échelle Mois : la saison ---------- */
-function nowCardHTML() {
-  const t = todayKey();
-  const p = phaseOn(t);
-  const next = sortedRaces().find(r => isUpcoming(r));
-  if (!p && !next) return '';
-  const phase = p
-    ? (() => {
-        const [w, total] = weekInPhase(p, t);
-        return `<span class="znow__kicker">Aujourd’hui · semaine ${w} sur ${total}</span><strong>${esc(phaseType(p.type).name)}</strong>`;
-      })()
-    : `<span class="znow__kicker">Aujourd’hui</span><strong>Aucune phase en cours</strong>`;
-  return `<button type="button" class="znow ${p ? `phase--${p.type}` : ''}" data-go="day" data-key="${t}">
-    <span class="znow__phase">${phase}</span>
-    ${next ? `<span class="znow__race">${icon('flag', 14)} ${esc(next.name)} · <b>${countdownLabel(next.date)}</b></span>` : ''}
-  </button>`;
-}
-
 /** Rappel des inscriptions à finaliser (toutes les courses à venir). */
 function regReminderHTML() {
   const upcoming = sortedRaces().filter(r => isUpcoming(r));
@@ -232,15 +129,14 @@ function monthHTML() {
     .join('');
   const now = new Date();
   const races = sortedRaces().filter(r => monthOf(r.date) === monthOf(focus));
-  return `${monthOf(t) === monthOf(focus) ? nowCardHTML() + regReminderHTML() : ''}
-    <div class="zcal" role="group" aria-label="${esc(zoomTitle())}"><span></span>${head}${cells.join('')}</div>
+  return `<div class="zcal" role="group" aria-label="${esc(monthTitle(focus))}"><span></span>${head}${cells.join('')}</div>
     <h2 class="zsec">Phases du mois</h2>
     ${inMonth.length ? `<div class="zlist">${phaseRows}</div>` : '<p class="zempty">Aucune phase ce mois-ci. Touchez Ajouter pour en planifier une.</p>'}
     ${races.length ? `<h2 class="zsec">Courses</h2><div class="zlist">${[...races].reverse().map(r => raceRow(r, now)).join('')}</div>` : ''}`;
 }
 
 /* ---------- Échelle Semaine ---------- */
-function weekHTML() {
+function weekHTML(focus) {
   const t = todayKey();
   const phases = getPhases();
   const monday = mondayOf(fromKey(focus));
@@ -304,7 +200,7 @@ function raceCardHTML(r, now) {
   </article>`;
 }
 
-function dayHTML() {
+function dayHTML(focus) {
   const t = todayKey();
   const now = new Date();
   const races = racesOn(focus);
@@ -344,186 +240,300 @@ function dayHTML() {
   return html;
 }
 
-/* ---------- Rendu et transitions ---------- */
+
+/* ---------- Plan : prochain objectif ---------- */
+/** Prochain objectif (course A à venir), sinon prochaine course. */
+function nextGoal() {
+  const upcoming = sortedRaces().filter(r => isUpcoming(r));
+  return upcoming.find(r => racePriority(r.id) === 'A') || upcoming[0] || null;
+}
+
+/**
+ * Début de la préparation d'une course : début de la suite de phases qui y mène
+ * (sans remonter avant l'objectif précédent), sinon 16 semaines avant.
+ */
+function prepStart(race) {
+  const phases = getPhases();
+  const prevGoal = sortedRaces()
+    .filter(r => r.date < race.date && r.id !== race.id && racePriority(r.id) === 'A')
+    .at(-1);
+  const floor = prevGoal ? dateKey(addDays(fromKey(prevGoal.date), 1)) : '';
+  let p = phaseOn(race.date, phases) || [...phases].reverse().find(x => x.end < race.date && daysBetween(x.end, race.date) <= 7);
+  if (!p) return dateKey(addDays(fromKey(race.date), -112));
+  let start = p.start;
+  for (;;) {
+    const prev = phases.filter(x => x.end < start && daysBetween(x.end, start) <= 1).at(-1);
+    if (!prev || prev.type === 'transition' || prev.type === 'recovery' || (floor && prev.end < floor)) break;
+    start = prev.start;
+  }
+  if (floor && start < floor) start = floor;
+  return start;
+}
+
+function heroHTML() {
+  const r = nextGoal();
+  if (!r) {
+    return `<section class="shero shero--empty">
+      <span class="shero__pill">Prochain objectif</span>
+      <h2 class="shero__name">Aucune course à venir</h2>
+      <p class="shero__meta">Choisis tes cyclosportives et tes courses de ski de fond dans l’onglet Courses.</p>
+      <button type="button" class="btn shero__btn" data-act="catalog">${icon('flag', 16)}<span>Choisir mes courses</span></button>
+    </section>`;
+  }
+  const t = todayKey();
+  const start = prepStart(r);
+  const total = Math.max(1, daysBetween(start, r.date));
+  const done = Math.min(total, Math.max(0, daysBetween(start, t)));
+  const left = daysBetween(t, r.date);
+  const goal = racePriority(r.id) === 'A';
+  const meta = [r.distance !== '' ? fmtDist(r) : '', r.elevation !== '' ? `${Number(r.elevation).toLocaleString('fr-FR')} m` : '', r.sport].filter(Boolean);
+  return `<button type="button" class="shero" data-go="day" data-key="${r.date}">
+    <span class="shero__top"><span class="shero__pill">${goal ? 'Prochain objectif' : 'Prochaine course'}</span>${regBadge(r.id)}</span>
+    <span class="shero__main">
+      <span class="shero__id"><strong class="shero__name">${esc(r.name)}</strong><span class="shero__meta">${meta.map(esc).join(' · ')}</span></span>
+      <span class="shero__count"><strong>${left === 0 ? 'J' : left}</strong><span>${left === 0 ? 'Aujourd’hui' : plural(left, 'jour')}</span></span>
+    </span>
+    <span class="shero__dates"><span>Début : ${shortDate(start)}</span><span>${goal ? 'Objectif' : 'Course'} : ${shortDate(r.date)}</span></span>
+    <span class="shero__bar" role="progressbar" aria-label="Préparation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((done / total) * 100)}"><i style="width:${Math.max(2, (done / total) * 100)}%"></i></span>
+  </button>`;
+}
+
+/* ---------- Plan : semaines colorées par phase ---------- */
+function planHTML() {
+  const t = todayKey();
+  const phases = getPhases();
+  const goal = nextGoal();
+  const thisMonday = mondayOf(fromKey(t));
+  const goalStart = goal ? fromKey(prepStart(goal)) : null;
+  // De 2 à 12 semaines avant aujourd'hui (début de la préparation), jusqu'à la dernière course ou phase planifiée.
+  let from = goalStart && goalStart < thisMonday ? mondayOf(goalStart) : addDays(thisMonday, -14);
+  if (daysBetween(dateKey(from), dateKey(thisMonday)) > 84) from = addDays(thisMonday, -84);
+  if (daysBetween(dateKey(from), dateKey(thisMonday)) < 14) from = addDays(thisMonday, -14);
+  const horizon = dateKey(addDays(thisMonday, 364));
+  const ends = [dateKey(addDays(thisMonday, 8 * 7)), ...sortedRaces().filter(r => r.date >= t && r.date <= horizon).map(r => r.date), ...phases.filter(p => p.end >= t && p.start <= horizon).map(p => (p.end > horizon ? horizon : p.end))];
+  const last = ends.sort().at(-1);
+  const n = Math.min(52, Math.max(10, Math.ceil((daysBetween(dateKey(from), last) + 1) / 7)));
+  const weeks = [];
+  for (let i = 0; i < n; i++) {
+    const monday = dateKey(addDays(from, i * 7));
+    const sunday = dateKey(addDays(from, i * 7 + 6));
+    const p = phaseOn(dateKey(addDays(from, i * 7 + 3)), phases);
+    const races = state.races.filter(r => r.date >= monday && r.date <= sunday);
+    weeks.push({ monday, sunday, p, races, goal: races.some(r => racePriority(r.id) === 'A'), now: t >= monday && t <= sunday, past: sunday < t });
+  }
+  // Libellés de phase au-dessus des groupes de semaines (assez larges pour être lus).
+  const labels = [];
+  weeks.forEach((w, i) => {
+    if (!w.p || (i > 0 && weeks[i - 1].p?.id === w.p.id)) return;
+    let j = i;
+    while (j + 1 < n && weeks[j + 1].p?.id === w.p.id) j++;
+    if ((j - i + 1) / n >= 0.09) labels.push(`<span class="splan__ph phase--${w.p.type}" style="left:${(i / n) * 100}%">${esc(phaseType(w.p.type).short)}</span>`);
+  });
+  const bars = weeks
+    .map(w => {
+      const h = w.p ? Math.max(14, Math.round(phaseType(w.p.type).load * 100)) : 8;
+      const label = [`Semaine du ${shortDate(w.monday)}`, w.p ? phaseType(w.p.type).name : 'aucune phase', ...w.races.map(r => `course : ${r.name}`)].join(', ');
+      return `<button type="button" class="splan__w${w.now ? ' is-now' : ''}${w.past ? ' is-past' : ''}" data-go="week" data-key="${w.monday}" aria-label="${esc(label)}">
+        ${w.races.length ? `<span class="splan__race${w.goal ? ' is-goal' : ''}"></span>` : ''}
+        <span class="splan__bar ${w.p ? `phase--${w.p.type}` : 'is-empty'}" style="height:${h}%"></span></button>`;
+    })
+    .join('');
+  const step = n > 30 ? 2 : 1;
+  let lastMonth = -1;
+  let shown = 0;
+  const months = weeks
+    .map((w, i) => {
+      const d = fromKey(w.monday);
+      const m = d.getMonth();
+      if (m === lastMonth) return '';
+      lastMonth = m;
+      if (shown++ % step) return '';
+      return `<span style="left:${(i / n) * 100}%">${formatDate(d, { month: 'short' })}</span>`;
+    })
+    .join('');
+
+  // Compteurs : semaine de préparation, phase en cours, inscriptions.
+  const cur = phaseOn(t, phases);
+  const upcoming = sortedRaces().filter(r => isUpcoming(r));
+  const reg = countRegistrations(upcoming);
+  const prepWeeks = goal ? Math.max(1, Math.ceil(daysBetween(prepStart(goal), goal.date) / 7)) : 0;
+  const prepNow = goal ? Math.min(prepWeeks, Math.max(0, Math.floor(daysBetween(prepStart(goal), t) / 7) + 1)) : 0;
+  const stats = [
+    goal ? ['Semaine', `${prepNow}<small>/${prepWeeks}</small>`] : ['Semaine', `${isoWeek(t)}`],
+    ['Phase', cur ? `<i class="phase-dot phase--${cur.type}"></i>${esc(phaseType(cur.type).short)}` : '—'],
+    ['Inscrit', `${reg.done}<small>/${upcoming.length}</small>`]
+  ]
+    .map(([l, v]) => `<div class="sstat"><span>${l}</span><strong>${v}</strong></div>`)
+    .join('');
+
+  return `<section class="scard">
+    <header class="scard__head"><h2>Mon plan</h2><button type="button" class="link-btn" data-act="planner">Phases auto</button></header>
+    <div class="splan" style="--n:${n}">
+      <div class="splan__labels">${labels.join('')}</div>
+      <div class="splan__bars" role="group" aria-label="Semaines de la saison">${bars}</div>
+      <div class="splan__months" aria-hidden="true">${months}</div>
+    </div>
+    <div class="sstats">${stats}</div>
+  </section>`;
+}
+
+/* ---------- Plan : cette semaine ---------- */
+function thisWeekHTML() {
+  const t = todayKey();
+  const phases = getPhases();
+  const monday = mondayOf(fromKey(t));
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const key = dateKey(addDays(monday, i));
+    const p = phaseOn(key, phases);
+    const races = racesOn(key);
+    const d = fromKey(key);
+    const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? phaseType(p.type).name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
+    days.push(`<button type="button" class="sday${key === t ? ' is-today' : ''}${key < t ? ' is-past' : ''}${races.length ? ' is-race' : ''}${p ? ` phase--${p.type}` : ''}" data-go="day" data-key="${key}" aria-label="${esc(label)}">
+      <span>${formatDate(d, { weekday: 'narrow' })}</span><strong>${d.getDate()}</strong><i></i></button>`);
+  }
+  const p = phaseOn(t, phases);
+  let advice = '';
+  if (p) {
+    const [w, total] = weekInPhase(p, t);
+    advice = `<p class="sadvice phase--${p.type}"><b>${esc(phaseType(p.type).short)} · semaine ${w} sur ${total}</b>${esc(phaseType(p.type).advice)}</p>`;
+  }
+  return `<section class="scard">
+    <header class="scard__head"><h2>Cette semaine</h2><button type="button" class="link-btn" data-go="week" data-key="${dateKey(monday)}">Détail</button></header>
+    <div class="sweek">${days.join('')}</div>
+    ${advice}
+  </section>`;
+}
+
+/* ---------- Plan : à venir, mois par mois ---------- */
+function upcomingHTML() {
+  const t = todayKey();
+  const now = new Date();
+  const phases = getPhases();
+  const horizon = dateKey(addDays(fromKey(t), 365));
+  const upcoming = sortedRaces().filter(r => isUpcoming(r, now) && r.date <= horizon);
+  const n = countRegistrations(upcoming);
+  const filter = upcoming.length ? regFilter : '';
+  const races = filter ? upcoming.filter(r => registrationOf(r.id) === filter) : upcoming;
+  const items = [
+    ...races.map(r => ({ date: r.date, html: raceRow(r, now, { day: true }) })),
+    ...(filter
+      ? []
+      : phases
+          .filter(p => p.start > t && p.start <= horizon)
+          .map(p => ({
+            date: p.start,
+            html: `<button type="button" class="srow-phase phase--${p.type}" data-go="day" data-key="${p.start}"><i class="phase-dot"></i><span><b>${esc(phaseType(p.type).name)}</b> · ${shortDate(p.start)} → ${shortDate(p.end)}</span></button>`
+          })))
+  ].sort((a, b) => a.date.localeCompare(b.date) || (a.html.startsWith('<button type="button" class="srow-phase') ? -1 : 1));
+  const chip = (id, label, count) =>
+    `<button type="button" class="chip-btn${id ? ` reg--${id}` : ''}" data-act="reg-filter" data-reg="${id}" aria-pressed="${filter === id}">${label}<b>${count}</b></button>`;
+  const chips = upcoming.length ? `<div class="zregs" role="group" aria-label="Filtrer par inscription">${chip('', 'Toutes', upcoming.length)}${REGISTRATIONS.map(x => chip(x.id, x.name, n[x.id])).join('')}</div>` : '';
+  let month = '';
+  const rows = items
+    .map(it => {
+      const m = monthOf(it.date);
+      const headHTML = m !== month ? `<h3 class="smonth">${esc(monthTitle(`${m}-01`))}</h3>` : '';
+      month = m;
+      return headHTML + it.html;
+    })
+    .join('');
+  const empty = filter
+    ? `<p class="zempty">Aucune course à venir avec l’inscription « ${esc(registrationName(filter).toLowerCase())} ».</p>`
+    : '<p class="zempty">Rien de prévu. Ajoute tes courses depuis l’onglet Courses.</p>';
+  // Courses terminées des 12 derniers mois, la plus récente en premier.
+  const since = dateKey(addDays(fromKey(t), -365));
+  const past = sortedRaces().filter(r => !isUpcoming(r, now) && r.date >= since).reverse();
+  return `<h2 class="zsec" id="saisonUpcoming">À venir</h2>${chips}<div class="zlist">${rows || empty}</div>
+    ${past.length ? `<h2 class="zsec">Terminées</h2><div class="zlist">${past.map(r => raceRow(r, now, { day: true })).join('')}</div>` : ''}`;
+}
+
+/* ---------- Rendu ---------- */
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function renderZoom({ dir = 0, origin = null, slide = 0 } = {}) {
+export function renderZoom({ slide = 0 } = {}) {
   if (silentNext) {
     silentNext = false;
     return;
   }
   const body = $('#zoomBody');
   if (!body) return;
-  body.innerHTML = [yearHTML, monthHTML, weekHTML, dayHTML][level]();
-  const title = zoomTitle();
-  $('#headerTitle').textContent = title;
-  document.title = `${title} · Cadence`;
-  document.querySelectorAll('#zoomLevels [data-level]').forEach(b => b.setAttribute('aria-checked', String(Number(b.dataset.level) === level)));
-  $('#zoomHint').textContent = HINTS[level];
-  $('#zoomToday').hidden = showsToday();
-  $('#zoomPrev').setAttribute('aria-label', NAV_LABELS[level][0]);
-  $('#zoomNext').setAttribute('aria-label', NAV_LABELS[level][1]);
+  document.querySelectorAll('#saisonModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
+  $('#calNav').hidden = mode !== 'cal';
+  if (mode === 'plan') body.innerHTML = heroHTML() + regReminderHTML() + planHTML() + thisWeekHTML() + upcomingHTML();
+  else {
+    body.innerHTML = monthHTML();
+    $('#calTitle').textContent = monthTitle(focus);
+    $('#zoomToday').hidden = monthOf(focus) === monthOf(todayKey());
+  }
+  $('#headerTitle').textContent = 'Saison';
+  if (isOpen('daySheet')) renderSheet();
   if (slide) {
     body.style.transform = '';
-    body.classList.remove('is-zoom-in', 'is-zoom-out', 'is-slide-next', 'is-slide-prev', 'is-fade');
+    body.classList.remove('is-slide-next', 'is-slide-prev', 'is-fade');
     void body.offsetWidth;
     body.classList.add(reduceMotion() ? 'is-fade' : slide > 0 ? 'is-slide-next' : 'is-slide-prev');
-    return;
   }
-  if (!dir) return;
-  if (origin) {
-    const r = body.getBoundingClientRect();
-    const o = origin.getBoundingClientRect();
-    body.style.transformOrigin = `${o.left - r.left + o.width / 2}px ${o.top - r.top + o.height / 2}px`;
-  } else body.style.transformOrigin = '50% 20%';
-  body.classList.remove('is-zoom-in', 'is-zoom-out');
-  void body.offsetWidth;
-  body.classList.add(reduceMotion() ? 'is-fade' : dir > 0 ? 'is-zoom-in' : 'is-zoom-out');
 }
 
-function setLevel(next, origin = null) {
-  next = Math.max(0, Math.min(3, next));
-  if (next === level) return;
-  const dir = next > level ? 1 : -1;
-  level = next;
-  write(LEVEL_KEY, String(level));
-  renderZoom({ dir, origin });
-  if (dir) window.scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' });
+function setMode(next) {
+  if (next === mode) return;
+  mode = next;
+  write(MODE_KEY, mode);
+  renderZoom();
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function shift(n) {
+  if (mode !== 'cal') return;
   const d = fromKey(focus);
-  if (level === 0) focus = dateKey(new Date(d.getFullYear() + n, d.getMonth(), 1, 12));
-  else if (level === 1) focus = dateKey(new Date(d.getFullYear(), d.getMonth() + n, 1, 12));
-  else focus = dateKey(addDays(d, n * (level === 2 ? 7 : 1)));
-  // En revenant sur la période en cours, on se recale sur aujourd'hui.
-  if (level < 3 && showsTodayFor(focus)) focus = todayKey();
+  focus = dateKey(new Date(d.getFullYear(), d.getMonth() + n, 1, 12));
+  if (monthOf(focus) === monthOf(todayKey())) focus = todayKey();
   renderZoom({ slide: n });
 }
 
-function showsTodayFor(key) {
-  const t = todayKey();
-  if (level === 0) return yearOf(t) === yearOf(key);
-  if (level === 1) return monthOf(t) === monthOf(key);
-  if (level === 2) return dateKey(mondayOf(fromKey(t))) === dateKey(mondayOf(fromKey(key)));
-  return false;
+/* ---------- Fiche du jour / de la semaine ---------- */
+function renderSheet() {
+  const { kind, key } = sheet;
+  if (kind === 'week') {
+    const monday = mondayOf(fromKey(key));
+    const sunday = addDays(monday, 6);
+    $('#dayTitle').textContent = `${formatDate(monday, { day: 'numeric', month: 'short' })} – ${formatDate(sunday, { day: 'numeric', month: 'short' })}`;
+    $('#dayBody').innerHTML = weekHTML(key);
+  } else {
+    $('#dayTitle').textContent = cap(formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }));
+    $('#dayBody').innerHTML = dayHTML(key);
+  }
+  $('#dayPrev').setAttribute('aria-label', kind === 'week' ? 'Semaine précédente' : 'Jour précédent');
+  $('#dayNext').setAttribute('aria-label', kind === 'week' ? 'Semaine suivante' : 'Jour suivant');
 }
 
-/** Plonge vers l'élément touché (mois, semaine, jour). */
-function dive(el) {
-  const key = el.dataset.key;
-  const target = { month: 1, week: 2, day: 3 }[el.dataset.go];
-  if (!key || target === undefined) return;
-  focus = target < 3 && showsTodayAt(key, target) ? todayKey() : key;
-  if (target === level) renderZoom();
-  else setLevel(target, el);
+function openDetail(kind, key) {
+  sheet = { kind, key };
+  renderSheet();
+  $('#dayBody').scrollTop = 0;
+  openSheet('daySheet', { focus: false });
 }
 
-function showsTodayAt(key, lvl) {
-  const t = todayKey();
-  if (lvl === 1) return monthOf(t) === monthOf(key);
-  if (lvl === 2) return dateKey(mondayOf(fromKey(t))) === dateKey(mondayOf(fromKey(key)));
-  return false;
-}
-
-/** Date proposée aux formulaires d'ajout : le jour affiché, sinon rien (valeurs par défaut). */
-export const zoomContextDay = () => (level === 3 ? focus : '');
+/** Date proposée aux formulaires d'ajout : le jour de la fiche ouverte, sinon rien. */
+export const zoomContextDay = () => (isOpen('daySheet') && sheet.kind === 'day' ? sheet.key : '');
 
 /** Affiche le jour d'une course ou d'une phase qui vient d'être enregistrée. */
 export function showDay(key) {
   if (!key) return;
-  focus = key;
-  if (level === 3) renderZoom();
-  else setLevel(3);
+  if (isOpen('daySheet')) {
+    sheet = { kind: 'day', key };
+    renderSheet();
+  } else openDetail('day', key);
 }
 
-/* ---------- Gestes : pincer pour reculer, écarter pour plonger ---------- */
-function bindPinch(body) {
-  const under = (x, y) => document.elementFromPoint(x, y)?.closest('#zoomBody [data-go]');
-  const zoomIn = (x, y) => {
-    const el = level < 3 ? under(x, y) : null;
-    if (el && { month: 1, week: 2, day: 3 }[el.dataset.go] > level) dive(el);
-    else setLevel(level + 1);
-  };
-  // Trackpad (Chrome, Firefox, Edge) : le pincement arrive comme une molette avec Ctrl.
-  let acc = 0;
-  let lock = 0;
-  body.addEventListener(
-    'wheel',
-    e => {
-      if (!e.ctrlKey) return;
-      e.preventDefault();
-      if (Date.now() < lock) return;
-      acc += e.deltaY;
-      if (Math.abs(acc) < 30) return;
-      if (acc < 0) zoomIn(e.clientX, e.clientY);
-      else setLevel(level - 1);
-      acc = 0;
-      lock = Date.now() + 450;
-    },
-    { passive: false }
-  );
-  // Safari (iPhone, iPad, Mac) : événements gesture*.
-  let gesture = null;
-  body.addEventListener('gesturestart', e => {
-    e.preventDefault();
-    gesture = { x: e.clientX, y: e.clientY, done: false };
-  });
-  body.addEventListener('gesturechange', e => {
-    e.preventDefault();
-    if (!gesture || gesture.done) return;
-    if (e.scale > 1.25) {
-      gesture.done = true;
-      zoomIn(gesture.x, gesture.y);
-    } else if (e.scale < 0.8) {
-      gesture.done = true;
-      setLevel(level - 1);
-    }
-  });
-  body.addEventListener('gestureend', e => {
-    e.preventDefault();
-    gesture = null;
-  });
-  // Autres écrans tactiles : deux doigts.
-  let start = 0;
-  let center = null;
-  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-  body.addEventListener(
-    'touchstart',
-    e => {
-      if (e.touches.length !== 2) return;
-      start = dist(e.touches);
-      center = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
-    },
-    { passive: true }
-  );
-  body.addEventListener(
-    'touchmove',
-    e => {
-      if (e.touches.length !== 2 || !start) return;
-      e.preventDefault();
-      const ratio = dist(e.touches) / start;
-      if (ratio > 1.25) {
-        start = 0;
-        zoomIn(center.x, center.y);
-      } else if (ratio < 0.8) {
-        start = 0;
-        setLevel(level - 1);
-      }
-    },
-    { passive: false }
-  );
-  body.addEventListener('touchend', () => (start = 0));
-}
-
-/* ---------- Glisser à gauche / à droite : période suivante / précédente ---------- */
+/* ---------- Glisser à gauche / à droite : mois suivant / précédent (calendrier) ---------- */
 function bindSwipe(body) {
-  // Doigt : le contenu suit le doigt, puis on change de période au-delà d'un seuil.
   let s = null;
   body.addEventListener(
     'touchstart',
     e => {
-      if (e.touches.length !== 1 || e.target.closest('input, textarea, select')) {
+      if (mode !== 'cal' || e.touches.length !== 1 || e.target.closest('input, textarea, select')) {
         s = null;
         return;
       }
@@ -560,76 +570,81 @@ function bindSwipe(body) {
   };
   body.addEventListener('touchend', end);
   body.addEventListener('touchcancel', end);
-  // Trackpad : glissement horizontal à deux doigts.
-  let acc = 0;
-  let lock = 0;
-  body.addEventListener(
-    'wheel',
-    e => {
-      if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      if (Date.now() < lock) return;
-      acc += e.deltaX;
-      if (Math.abs(acc) < 60) return;
-      shift(acc > 0 ? 1 : -1);
-      acc = 0;
-      lock = Date.now() + 600;
-    },
-    { passive: false }
-  );
 }
 
-export function initZoom() {
-  const saved = Number(readText(LEVEL_KEY, '1'));
-  level = Number.isInteger(saved) && saved >= 0 && saved <= 3 ? saved : 1;
+/** Clics dans la Saison et dans la fiche : actions et ouverture d'un jour / d'une semaine. */
+function onClick(e) {
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    const { id } = act.dataset;
+    switch (act.dataset.act) {
+      case 'race-calendar': return raceAction('calendar', id);
+      case 'race-edit': return raceAction('edit', id);
+      case 'race-delete': return raceAction('delete', id);
+      case 'phase-edit': return openPhaseEditor(id);
+      case 'phase-delete': return deletePhase(id);
+      case 'phase-add': return openPhaseEditor(null, { start: sheet.key });
+      case 'race-reg': return saveRegistration(id, act.dataset.reg);
+      case 'catalog': return onCatalog();
+      case 'planner': return openPlanner();
+      case 'reg-filter':
+        regFilter = act.dataset.reg;
+        return renderZoom();
+      case 'reg-open':
+        regFilter = act.dataset.reg;
+        renderZoom();
+        return $('#saisonUpcoming')?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+    }
+    return;
+  }
+  const go = e.target.closest('[data-go]');
+  if (!go?.dataset.key) return;
+  if (go.dataset.go === 'week') openDetail('week', go.dataset.key);
+  else if (go.dataset.go === 'day') {
+    if (isOpen('daySheet')) {
+      sheet = { kind: 'day', key: go.dataset.key };
+      renderSheet();
+      $('#dayBody').scrollTop = 0;
+    } else openDetail('day', go.dataset.key);
+  }
+}
+
+function onResultChange(e) {
+  const input = e.target.closest('[data-result]');
+  const id = input?.closest('[data-id]')?.dataset.id;
+  if (!input || !id) return;
+  silentNext = true; // pas de re-rendu : on garde la saisie en cours
+  if (!saveResult(input, id)) {
+    silentNext = false;
+    renderZoom();
+  }
+}
+
+export function initZoom({ openCatalog } = {}) {
+  if (openCatalog) onCatalog = openCatalog;
+  mode = readText(MODE_KEY, 'plan') === 'cal' ? 'cal' : 'plan';
   const body = $('#zoomBody');
-  body.addEventListener('animationend', () => body.classList.remove('is-zoom-in', 'is-zoom-out', 'is-slide-next', 'is-slide-prev', 'is-fade'));
-  body.addEventListener('click', e => {
-    const act = e.target.closest('[data-act]');
-    if (act) {
-      const { id } = act.dataset;
-      switch (act.dataset.act) {
-        case 'race-calendar': return raceAction('calendar', id);
-        case 'race-edit': return raceAction('edit', id);
-        case 'race-delete': return raceAction('delete', id);
-        case 'phase-edit': return openPhaseEditor(id);
-        case 'phase-delete': return deletePhase(id);
-        case 'phase-add': return openPhaseEditor(null, { start: focus });
-        case 'race-reg': return saveRegistration(id, act.dataset.reg);
-        case 'reg-filter':
-          regFilter = act.dataset.reg;
-          return renderZoom();
-        case 'reg-open':
-          regFilter = act.dataset.reg;
-          focus = yearOf(act.dataset.key) === yearOf(todayKey()) ? todayKey() : act.dataset.key;
-          return setLevel(0, act);
-      }
-      return;
-    }
-    const go = e.target.closest('[data-go]');
-    if (go) dive(go);
-  });
-  body.addEventListener('input', wheelState);
-  body.addEventListener('change', e => {
-    const input = e.target.closest('[data-result]');
-    const id = input?.closest('[data-id]')?.dataset.id;
-    if (!input || !id) return;
-    silentNext = true; // pas de re-rendu : on garde la saisie en cours
-    if (!saveResult(input, id)) {
-      silentNext = false;
-      renderZoom();
-    }
-  });
-  $('#zoomLevels').addEventListener('click', e => {
-    const b = e.target.closest('[data-level]');
-    if (b) setLevel(Number(b.dataset.level));
+  body.addEventListener('animationend', () => body.classList.remove('is-slide-next', 'is-slide-prev', 'is-fade'));
+  body.addEventListener('click', onClick);
+  $('#dayBody').addEventListener('click', onClick);
+  $('#dayBody').addEventListener('input', wheelState);
+  $('#dayBody').addEventListener('change', onResultChange);
+  $('#saisonModes').addEventListener('click', e => {
+    const b = e.target.closest('[data-mode]');
+    if (b) setMode(b.dataset.mode);
   });
   $('#zoomPrev').addEventListener('click', () => shift(-1));
   $('#zoomNext').addEventListener('click', () => shift(1));
   $('#zoomToday').addEventListener('click', () => {
     focus = todayKey();
-    renderZoom({ dir: 1 });
+    renderZoom({ slide: -1 });
   });
-  bindPinch(body);
+  const step = n => {
+    const d = fromKey(sheet.key);
+    sheet = { ...sheet, key: dateKey(addDays(d, n * (sheet.kind === 'week' ? 7 : 1))) };
+    renderSheet();
+  };
+  $('#dayPrev').addEventListener('click', () => step(-1));
+  $('#dayNext').addEventListener('click', () => step(1));
   bindSwipe(body);
 }

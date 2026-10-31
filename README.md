@@ -4,18 +4,26 @@ _Anciennement **Allure** : le dépôt, les clés de stockage local (`allure_…`
 
 App sport (PWA installable sur iPhone) : courses, phases d'entraînement et mesures (poids, FTP vélo, mensurations).
 
-## Navigation : Zoom
-Un seul calendrier, quatre échelles, choisies en haut (**Année**, **Mois**, **Semaine**, **Jour**) ou d'un geste : écarter deux doigts plonge vers l'endroit touché, pincer recule (sur ordinateur : pincement du trackpad). Toucher un mois, une semaine (S…) ou un jour l'ouvre ; glisser à gauche / à droite (ou ‹ ›, ou glissement horizontal au trackpad) passe à l'année, au mois, à la semaine ou au jour suivant / précédent ; « Aujourd'hui » y revient.
-- **Année** : le bilan (une barre par mois, colorée par les phases, un point par mois avec course ; courses, à venir, terminées, km, € d'inscriptions ; répartition par sport ; liste des courses avec résultat ou J−).
-- **Mois** : phase en cours et prochaine course (mois courant), jours colorés par phase, course en noir, aujourd'hui entouré ; phases du mois (modifier, supprimer) et courses.
-- **Semaine** : conseil de la phase, une ligne par jour.
-- **Jour** : fiche de la course (J−, chiffres, notes, Calendrier .ics, Modifier, Supprimer ; résultat pour une course passée) et de la phase (semaine x sur y, conseil, Modifier, Supprimer), mesures du jour.
+## Navigation
+Barre du bas : **Saison**, **Courses**, **Suivi**, **Analyse** et **Ajouter**.
 
-Inscriptions : chaque course à venir a un état d'inscription, **À faire** (rouge, par défaut), **Incomplète** (ambre) ou **Complète** (vert), à choisir sur sa fiche (échelle Jour) ou dans l'éditeur de course (champ « Inscription ») ; stocké dans `objectives.raceRegistration`. Les courses à venir portent un badge (À inscrire, Incomplète, Inscrit) ; en Année, des puces filtrent la liste par état avec le nombre de courses ; en Mois (mois courant), un rappel « Inscriptions : x à faire · y incomplètes » ouvre l'année filtrée.
+### Saison
+Deux affichages, choisis en haut : **Plan** (par défaut) et **Calendrier**.
+- **Plan** (inspiré de Frive) : carte « Prochain objectif » (prochaine course A, sinon prochaine course : distance, D+, jours restants, début de la préparation et barre de progression ; la préparation part du début de la suite de phases qui mène à la course, sans remonter avant l'objectif précédent ni au-delà d'une récupération / transition, sinon 16 semaines avant) ; rappel des inscriptions ; « Mon plan » : une barre par semaine colorée par la phase (hauteur = charge du type de phase), course en point rouge (gros point = objectif), semaine en cours entourée, compteurs (semaine de préparation, phase en cours, courses inscrites) ; « Cette semaine » : sept jours colorés par phase avec le conseil de la phase ; « À venir » : courses et débuts de phase mois par mois (filtres d'inscription), puis « Terminées » (12 derniers mois).
+- **Calendrier** : un mois en grille (‹ › ou glisser pour changer de mois), phases et courses du mois.
+- Toucher un jour, une course ou la carte objectif ouvre la **fiche du jour** dans une feuille (course : J−, chiffres, inscription, Calendrier .ics, Modifier, Supprimer, résultat ; phase : semaine x sur y, conseil ; mesures du jour), avec ‹ › pour passer au jour suivant ; toucher une barre de « Mon plan », un numéro de semaine ou « Détail » ouvre la **fiche de la semaine**.
+
+### Courses
+Le catalogue de **toutes les cyclosportives** (123, reprises d'Échappée, `js/data/catalog-cyclo.js`) et de **toutes les courses de ski de fond** (24, reprises de Glisse, `js/data/catalog-ski.js`) : c'est ici que l'on choisit ses courses (les onglets Courses d'Échappée et de Glisse ont été retirés). Chaque épreuve affiche sa prochaine édition (date confirmée ou estimée), groupée par mois. Filtres : Tout / Vélo / Ski de fond, recherche (nom ou ville), région, **★ Ma sélection** (étoilées et déjà dans la saison).
+- **☆** présélectionne une course (stocké dans `objectives.catalogPicks`, synchronisé).
+- **Ajouter** ouvre l'éditeur de course pré-rempli (nom, sport, date, lieu, notes avec distances et site) : la date estimée se vérifie avant d'enregistrer. Une course déjà dans la saison (même nom à 60 jours près, ou même date) affiche « Dans ma saison » et ouvre sa fiche.
+- Mise à jour annuelle : les deux fichiers sont des copies de `js/data/races.js` d'Échappée et de Glisse (même format `editions: [{ year, date, confirmed }]`).
+
+Inscriptions : chaque course à venir a un état d'inscription, **À faire** (rouge, par défaut), **Incomplète** (ambre) ou **Complète** (vert), à choisir sur sa fiche du jour ou dans l'éditeur de course (champ « Inscription ») ; stocké dans `objectives.raceRegistration`. Les courses à venir portent un badge (À inscrire, Incomplète, Inscrit) ; dans « À venir », des puces filtrent la liste par état avec le nombre de courses ; un rappel « Inscriptions : x à faire · y incomplètes » en haut du Plan applique le filtre.
 
 Types de phase : le menu « Phase » de l'éditeur (lien « Modifier la liste ») et ⚙︎ › Réglages ouvrent la liste des types : ajouter, renommer (nom et nom court), changer la couleur, la charge (hauteur des barres de l'année) et le conseil, classer dans « Préparation spécifique », réordonner ou retirer. Un type retiré qui sert encore à des phases est seulement masqué du menu : ces phases gardent leur nom et leur couleur.
 
-Barre du bas : **Saison** (le zoom), **Suivi** (courbes du poids et de la FTP, mensurations, historiques), **Analyse** (export RunGap) et **Ajouter** (course, phase, poids, test FTP, mensurations) : toute nouvelle mesure se saisit depuis Ajouter. Depuis l'échelle Jour, la course ou la phase ajoutée prend la date du jour affiché ; une course enregistrée s'ouvre sur son jour.
+**Suivi** : courbes du poids et de la FTP, mensurations, historiques. **Analyse** : export RunGap. **Ajouter** : course, phase, poids, test FTP, mensurations ; avec la fiche d'un jour ouverte, la course ou la phase ajoutée prend cette date ; une course enregistrée depuis la Saison ouvre la fiche de son jour.
 ## Analyse (export RunGap)
 Onglet **Analyse** : « Importer l’export RunGap » lit le CSV complet exporté de RunGap (toutes les séances, tous sports). À chaque mise à jour, on redépose le fichier entier : seules les activités plus récentes que la dernière connue sont ajoutées ; les doublons Suunto / Garmin (départs à moins de 10 min) sont fusionnés. Les activités restent **sur l’appareil** (`allure_activities`, ~100 Ko pour 1 200 séances) : le nœud Firebase partagé avec Carnet n’accepte pas de nouvelle tranche.
 
@@ -79,12 +87,13 @@ Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) :
 
 ## Structure
 ```
-index.html          vue Zoom, Suivi, barre du bas, connexion, feuilles de saisie et Réglages
+index.html          Saison, Courses, Suivi, barre du bas, connexion, feuilles de saisie et Réglages
 css/                jetons, composants, vues, allure.css (style, palettes, connexion)
-js/core/            store (3 tranches), schéma, saison, dates
+js/core/            store (3 tranches), schéma, saison, dates, catalog (catalogue des courses)
+js/data/            catalogue : cyclosportives (Échappée) et ski de fond (Glisse)
 js/services/        Firebase (compte, synchro par tranche, migration), stockage local
 js/ui/              thème, connexion, modales, pastille de synchro, toasts
-js/views/           zoom (calendrier 4 échelles), races, season et phase-types (éditeurs), metrics (Suivi)
+js/views/           zoom (Saison : Plan, Calendrier, fiches), catalog (Courses), races, season et phase-types (éditeurs), metrics (Suivi)
 js/features/        export calendrier .ics, mannequin des mensurations
 ```
 

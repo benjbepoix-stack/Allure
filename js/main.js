@@ -17,12 +17,14 @@ import { refreshPhaseTypes } from './views/phase-types.js';
 import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { initAnalysis, renderAnalysis } from './views/analysis.js';
+import { initCatalog, renderCatalog } from './views/catalog.js';
 import { initPlanner, openPlanner, refreshPlanner } from './views/planner.js';
 import { clearActivities } from './core/activities.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
+  catalogView: { title: 'Courses', show: renderCatalog, slices: ['objectives', 'races'] },
   metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] },
   analysisView: { title: 'Analyse', show: renderAnalysis, slices: ['objectives', 'races'] }
 };
@@ -225,7 +227,13 @@ function init() {
   initRaces({ saved: race => currentView === 'zoomView' && showDay(race.date) });
   initSeason();
   initMetrics();
-  initZoom();
+  initZoom({ openCatalog: () => switchView('catalogView') });
+  initCatalog({
+    openDay: key => {
+      switchView('zoomView');
+      showDay(key);
+    }
+  });
   // Onglet Analyse : en cas d'erreur, le reste de l'app (et la synchronisation) démarre quand même.
   try {
     initAnalysis();

@@ -1,0 +1,123 @@
+/* =========================================================
+   SAISON : Plan (objectif, plan en barres, cette semaine, à venir)
+   et Calendrier (un mois). Cartes arrondies inspirées de Frive.
+   ========================================================= */
+:root {
+  --navy-1: #1d2c5c;
+  --navy-2: #0f1838;
+  --navy-ink: #ffffff;
+}
+
+/* Barre du bas : quatre onglets + Ajouter */
+.dock__tabs { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 480px) {
+  .dock__tab { flex-direction: column; gap: 1px; font-size: 10.5px; min-height: 48px; }
+  .dock__add { padding: 0; width: 58px; }
+  .dock__add > span:last-child { display: none; }
+}
+
+/* ---------- En-tête : Plan / Calendrier ---------- */
+.smodes { margin-bottom: var(--sp-3); }
+.smodes button[aria-checked="true"], .cat-sports button[aria-checked="true"] { background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow-sm); }
+:root[data-theme="dark"] .smodes button[aria-checked="true"], :root[data-theme="dark"] .cat-sports button[aria-checked="true"] { background: var(--surface-3); }
+.scalnav { display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-3); }
+.scalnav__title { flex: 1; text-align: center; font-size: var(--fs-lg); font-weight: 850; letter-spacing: -.02em; }
+.scalnav .chip-btn { min-height: 30px; padding: 0 10px; font-size: 12px; flex: none; order: 3; }
+.scalnav .chip-btn[hidden] { display: none; }
+
+.zbody { padding-bottom: 96px; }
+
+/* ---------- Prochain objectif ---------- */
+.shero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: var(--sp-3);
+  padding: 16px 18px 18px;
+  border-radius: var(--r-xl);
+  background: radial-gradient(120% 90% at 100% 0%, rgba(120, 150, 255, .28), transparent 60%), linear-gradient(160deg, var(--navy-1), var(--navy-2));
+  color: var(--navy-ink);
+  text-align: left;
+  box-shadow: 0 18px 40px -22px rgba(15, 24, 56, .9);
+  overflow: hidden;
+  transition: transform var(--dur-fast) var(--ease);
+}
+button.shero:active { transform: scale(.985); }
+.shero__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shero__pill { display: inline-flex; padding: 4px 10px; border-radius: var(--r-pill); background: #fff; color: var(--navy-1); font-size: 10.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.shero .reg-badge { background: rgba(255, 255, 255, .14); }
+.shero__main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.shero__id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.shero__name { display: block; font-size: var(--fs-xl); font-weight: 850; letter-spacing: -.03em; line-height: 1.15; overflow-wrap: anywhere; }
+.shero__meta { font-size: var(--fs-sm); font-weight: 650; color: rgba(255, 255, 255, .72); }
+.shero__count { display: flex; flex-direction: column; align-items: flex-end; flex: none; line-height: 1; }
+.shero__count strong { font-size: 44px; font-weight: 900; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.shero__count span { margin-top: 2px; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .72); }
+.shero__dates { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 650; color: rgba(255, 255, 255, .66); }
+.shero__bar { display: block; height: 8px; margin-top: -6px; border-radius: 4px; background: rgba(255, 255, 255, .16); overflow: hidden; }
+.shero__bar i { display: block; height: 100%; border-radius: 4px; background: #fff; }
+.shero--empty { cursor: default; }
+.shero--empty .shero__pill { align-self: flex-start; }
+.shero__btn { align-self: flex-start; gap: 6px; background: #fff; color: var(--navy-1); font-weight: 800; }
+
+/* ---------- Cartes ---------- */
+.scard { margin-bottom: var(--sp-3); padding: 14px 14px 12px; border-radius: var(--r-xl); background: var(--surface); }
+.scard__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.scard__head h2 { font-size: var(--fs-lg); font-weight: 850; letter-spacing: -.02em; }
+.scard__head .link-btn { font-size: var(--fs-sm); }
+
+/* ---------- Mon plan : une barre par semaine ---------- */
+.splan { position: relative; }
+.splan__labels { position: relative; height: 16px; margin-bottom: 4px; }
+.splan__ph { position: absolute; top: 0; padding-left: 1px; font-size: 9.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; color: var(--ph); white-space: nowrap; }
+.splan__bars { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 2px; align-items: end; height: 128px; padding: 12px 6px 0 2px; margin: 0 -6px 0 -2px; overflow: hidden; }
+.splan__w { position: relative; display: flex; align-items: flex-end; height: 100%; padding: 0; border-radius: 4px; }
+.splan__bar { display: block; width: 100%; border-radius: 3px 3px 2px 2px; background: var(--ph); transition: transform var(--dur-fast) var(--ease); transform-origin: bottom; }
+.splan__bar.is-empty { background: var(--surface-3); }
+.splan__w.is-past .splan__bar { opacity: .4; }
+.splan__w.is-now::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--text); }
+.splan__w.is-now .splan__bar { box-shadow: 0 0 0 1.5px var(--bg), 0 0 0 3px var(--text); }
+.splan__w:active .splan__bar { transform: scaleY(.94); }
+.splan__race { position: absolute; left: 50%; top: -10px; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--race); }
+.splan__race.is-goal { top: -12px; width: 11px; height: 11px; margin-left: -5.5px; box-shadow: 0 0 0 2px var(--surface); }
+.splan__months { position: relative; height: 16px; margin-top: 10px; }
+.splan__months span { position: absolute; top: 0; font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: capitalize; white-space: nowrap; }
+.sstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.sstat { padding: 9px 10px; border-radius: var(--r-md); background: var(--surface-2); min-width: 0; }
+.sstat span { display: block; font-size: 11px; font-weight: 650; color: var(--text-3); }
+.sstat strong { display: flex; align-items: center; gap: 6px; font-size: var(--fs-lg); font-weight: 850; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.sstat small { font-size: var(--fs-sm); font-weight: 700; color: var(--text-3); }
+
+/* ---------- Cette semaine ---------- */
+.sweek { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.sday { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 0 9px; border-radius: 14px; background: var(--surface-2); transition: transform var(--dur-fast) var(--ease); }
+.sday span { font-size: 10.5px; font-weight: 750; color: var(--text-3); text-transform: uppercase; }
+.sday strong { font-size: var(--fs-lg); font-weight: 850; font-variant-numeric: tabular-nums; }
+.sday i { display: block; width: 60%; height: 4px; margin-top: 3px; border-radius: 2px; background: var(--ph, transparent); }
+.sday.is-past { opacity: .55; }
+.sday.is-today { box-shadow: inset 0 0 0 2px var(--text); }
+.sday.is-race { background: var(--race); }
+.sday.is-race span, .sday.is-race strong { color: var(--race-ink); }
+.sday.is-race i { background: var(--race-ink); }
+.sday:active { transform: scale(.94); }
+.sadvice { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); box-shadow: inset 4px 0 0 var(--ph); font-size: var(--fs-xs); color: var(--text-2); line-height: 1.45; }
+.sadvice b { display: block; margin-bottom: 2px; color: var(--ph); font-weight: 850; }
+
+/* ---------- À venir ---------- */
+.smonth { margin: 10px 2px 2px; font-size: var(--fs-sm); font-weight: 850; color: var(--text); }
+.smonth:first-child { margin-top: 0; }
+.srow-phase { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 12px; border-radius: var(--r-md); text-align: left; font-size: 12px; font-weight: 600; color: var(--text-2); background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.srow-phase b { color: var(--text); font-weight: 800; }
+.srow-phase .phase-dot { width: 10px; height: 10px; }
+
+/* ---------- Fiche du jour / de la semaine ---------- */
+#daySheet .sheet__head { align-items: center; gap: 4px; }
+.dsheet__title { flex: 1; min-width: 0; text-align: center; font-size: var(--fs-lg); }
+#dayBody { padding-bottom: var(--sp-4); }
+
+:root[data-theme="light"] .splan__ph, :root[data-theme="light"] .sadvice b { color: color-mix(in srgb, var(--ph) 72%, #000); }
+@media (min-width: 900px) {
+  .splan__bars { height: 180px; }
+}
