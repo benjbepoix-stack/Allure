@@ -31,14 +31,14 @@ export function analysisSettings() {
 
 /* ---------- Sports ---------- */
 export const FAMILIES = [
-  { id: 'run', name: 'Course à pied', color: '#ff6b4a' },
-  { id: 'trail', name: 'Trail', color: '#f2a516' },
-  { id: 'bike', name: 'Vélo', color: '#3d82f6' },
-  { id: 'ski', name: 'Ski de fond', color: '#14b8a6' },
-  { id: 'skiroll', name: 'Ski-roue', color: '#22a6c8' },
-  { id: 'gym', name: 'Renfo', color: '#a95cf0' },
-  { id: 'hike', name: 'Rando', color: '#7cbf3a' },
-  { id: 'other', name: 'Autre', color: '#8b90a0' }
+  { id: 'run', name: 'Course à pied', color: '#ffa23d' },
+  { id: 'trail', name: 'Trail', color: '#b8461f' },
+  { id: 'bike', name: 'Vélo', color: '#ff5a3c' },
+  { id: 'ski', name: 'Ski de fond', color: '#e0245e' },
+  { id: 'skiroll', name: 'Ski-roue', color: '#f28aa8' },
+  { id: 'gym', name: 'Renfo', color: '#7d5442' },
+  { id: 'hike', name: 'Rando', color: '#e3b56c' },
+  { id: 'other', name: 'Autre', color: '#a39a92' }
 ];
 const FAMILY_OF = {
   'Running': 'run',
@@ -98,9 +98,9 @@ export function trimp(a, s) {
 
 /* Facile / modéré / dur, d'après la FC moyenne (part de la FC de réserve). */
 export const ZONES = [
-  { id: 'easy', name: 'Facile', color: '#2bbf7a' },
-  { id: 'mid', name: 'Modéré', color: '#f2a516' },
-  { id: 'hard', name: 'Dur', color: '#ff3b4a' }
+  { id: 'easy', name: 'Facile', color: '#ffc58a' },
+  { id: 'mid', name: 'Modéré', color: '#ff8a3d' },
+  { id: 'hard', name: 'Dur', color: '#d91e3a' }
 ];
 export const zoneOf = (a, s) => {
   const k = reserve(a, s);

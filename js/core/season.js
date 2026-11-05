@@ -26,7 +26,8 @@ export const DEFAULT_PHASE_TYPES = [
     id: 'base',
     name: 'Préparation générale (foncier)',
     short: 'Foncier',
-    color: '#2f80ff',
+    color: '#ffa86b',
+    light: '#f08f4e',
     load: 0.5,
     advice: 'Volume en endurance fondamentale, sorties longues faciles, renforcement et technique. Peu d’intensité.'
   },
@@ -35,7 +36,7 @@ export const DEFAULT_PHASE_TYPES = [
     name: 'Spécifique volume',
     short: 'Spé volume',
     group: 'spec',
-    color: '#5856f0',
+    color: '#ff8a3d',
     load: 0.85,
     advice: 'Augmenter progressivement la charge : sorties longues spécifiques (dénivelé, terrain, durée proche de la course), enchaînements sur deux jours. Intensité modérée (tempo, seuil long).'
   },
@@ -44,7 +45,7 @@ export const DEFAULT_PHASE_TYPES = [
     name: 'Spécifique intensité',
     short: 'Spé intensité',
     group: 'spec',
-    color: '#9b30d9',
+    color: '#ff4d3a',
     load: 0.95,
     advice: 'Volume stable ou en léger retrait, qualité en hausse : fractionné VO₂max, seuil, côtes, 2 séances dures par semaine maximum, bien encadrées de récupération.'
   },
@@ -53,7 +54,7 @@ export const DEFAULT_PHASE_TYPES = [
     name: 'Spécifique allure course',
     short: 'Spé course',
     group: 'spec',
-    color: '#c21fcf',
+    color: '#d91e4f',
     load: 0.9,
     advice: 'Répétitions et simulations à l’allure cible, test du matériel et de la nutrition, sortie « répétition générale » 2 à 3 semaines avant la course.'
   },
@@ -62,7 +63,7 @@ export const DEFAULT_PHASE_TYPES = [
     name: 'Spécifique (mixte)',
     short: 'Spécifique',
     group: 'spec',
-    color: '#7a3cf0',
+    color: '#ff6a3d',
     load: 0.9,
     advice: 'Séances au rythme de la course : seuil, fractionné, sorties longues spécifiques (dénivelé, allure cible), en alternant semaines de charge et d’assimilation.'
   },
@@ -70,8 +71,8 @@ export const DEFAULT_PHASE_TYPES = [
     id: 'taper',
     name: 'Affûtage',
     short: 'Affûtage',
-    color: '#f5b400',
-    light: '#e9a800',
+    color: '#ffc23d',
+    light: '#e6a200',
     load: 0.6,
     advice: 'Volume réduit de 30 à 50 %, quelques rappels d’intensité courts. Priorité à la fraîcheur et au sommeil.'
   },
@@ -79,8 +80,8 @@ export const DEFAULT_PHASE_TYPES = [
     id: 'recovery',
     name: 'Récupération',
     short: 'Récup',
-    color: '#10b981',
-    light: '#0ea371',
+    color: '#c8b6a4',
+    light: '#b09a85',
     load: 0.3,
     advice: 'Après la course : séances courtes et faciles, récupération active, mobilité. Aucune intensité.'
   },
@@ -88,13 +89,19 @@ export const DEFAULT_PHASE_TYPES = [
     id: 'transition',
     name: 'Transition',
     short: 'Coupure',
-    color: '#8b90a0',
+    color: '#968d86',
     load: 0.2,
     advice: 'Coupure entre deux saisons : activités libres et plaisir, sans objectif chiffré.'
   }
 ];
 
 const TYPE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+/*
+ * Anciennes couleurs d'origine (bleus, violets, vert) : une liste enregistrée qui
+ * les a gardées passe aux teintes braise de l'app. Une couleur choisie à la main
+ * (différente) est conservée.
+ */
+const OLD_COLORS = { base: '#2f80ff', buildVolume: '#5856f0', buildIntensity: '#9b30d9', buildRace: '#c21fcf', build: '#7a3cf0', taper: '#f5b400', recovery: '#10b981', transition: '#8b90a0' };
 const COLOR = /^#[0-9a-f]{6}$/i;
 const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -104,16 +111,17 @@ function normalizeType(raw, fallback = {}) {
   const name = text(raw.name, 60) || fallback.name;
   if (!name) return null;
   const load = Number(raw.load);
+  const color = COLOR.test(raw.color) && raw.color.toLowerCase() !== OLD_COLORS[raw.id] ? raw.color.toLowerCase() : fallback.color || '#968d86';
   return {
     id: raw.id,
     name,
     short: text(raw.short, 20) || fallback.short || name.slice(0, 20),
     advice: typeof raw.advice === 'string' ? raw.advice.trim().slice(0, 400) : fallback.advice || '',
-    color: COLOR.test(raw.color) ? raw.color.toLowerCase() : fallback.color || '#8b90a0',
+    color,
     load: Number.isFinite(load) && load >= 0 && load <= 1 ? load : fallback.load ?? 0.5,
     ...(raw.group === 'spec' ? { group: 'spec' } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
-    ...(fallback.light && (raw.color || fallback.color).toLowerCase() === fallback.color ? { light: fallback.light } : {})
+    ...(fallback.light && color === fallback.color ? { light: fallback.light } : {})
   };
 }
 
@@ -151,7 +159,7 @@ function buildTypes(stored) {
 /** Types proposés dans le formulaire (hors types retirés de la liste). */
 export const phaseTypes = () => allPhaseTypes().filter(t => !t.hidden);
 
-const UNKNOWN = { id: '', name: 'Phase', short: 'Phase', advice: '', color: '#8b90a0', load: 0.5 };
+const UNKNOWN = { id: '', name: 'Phase', short: 'Phase', advice: '', color: '#968d86', load: 0.5 };
 /** Type d'identifiant `id` (même retiré de la liste). */
 export const phaseType = id => allPhaseTypes().find(t => t.id === id) || { ...UNKNOWN, id };
 export const isPhaseType = v => allPhaseTypes().some(t => t.id === v);

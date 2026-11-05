@@ -57,7 +57,7 @@ const TRANSITION = 14;
  * objectifs à venir.
  * @returns {Array<{type,start,end,note,race}>}
  */
-export function planPhases(from = todayKey()) {
+export function planPhases(from = todayKey(), { taperDays = null } = {}) {
   const goals = state.races.filter(r => r.date >= from && racePriority(r.id) === 'A').sort((a, b) => a.date.localeCompare(b.date));
   const out = [];
   let cursor = from; // premier jour libre
@@ -67,7 +67,8 @@ export function planPhases(from = todayKey()) {
     if (race.date < cursor) return; // deux objectifs le même jour ou trop proches : le premier suffit
     const sz = size(race);
     const free = days(cursor, race.date) + 1; // jours jusqu'au jour J inclus
-    let taper = Math.min(TAPER[sz], free);
+    // Affûtage : durée tirée des meilleurs pics de forme passés si elle est connue, sinon selon la course.
+    let taper = Math.min(taperDays || TAPER[sz], free);
     let rest = free - taper;
     let spec = 0;
     let base = 0;

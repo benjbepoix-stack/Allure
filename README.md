@@ -29,7 +29,7 @@ Onglet **Analyse** : « Connecter Strava » récupère les activités directemen
 
 Ancien import : la fiche Strava garde « Importer un fichier CSV » (export RunGap) en secours.
 
-Deux affichages : **Bilan** et **Plan**. En Bilan, la période (menu, ‹ ›) et le sport (menu) restent collés sous l'en-tête au défilement.
+Trois affichages : **Bilan**, **Pics** (voir « Pics de forme ») et **Plan**. En Bilan, la période (menu, ‹ ›) et le sport (menu) restent collés sous l'en-tête au défilement.
 
 Bilan, périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phases qui se suivent, coupé après une phase de transition), avec ‹ › pour remonter dans le temps.
 - Forme (42 j), fatigue (7 j) et fraîcheur : charge de chaque séance en TRIMP de Banister, estimée depuis la FC moyenne et la durée (l’export ne donne pas le temps par zone). Phases de Cadence en bandeaux, courses en repères.
@@ -42,6 +42,26 @@ Bilan, périodes : Mois, 3 mois, 6 mois, 12 mois, Année, Saison (groupe de phas
 Plan (inspiré de Frive) : phase de la semaine choisie (semaine x sur y, objectif et J−, cible et réalisé), volume cible par semaine (référence × facteur de la phase, une semaine sur quatre allégée en foncier et en spécifique ; réalisé superposé, toucher une barre affiche la semaine) et liste des phases en cours et à venir : toucher une phase ouvre sa fiche (dates, type, note, suppression), « Ajouter une phase » en crée une à la main.
 
 Import : séparateur (virgule, point-virgule, tabulation) et encodage (UTF-8, UTF-16) détectés. Une erreur d'affichage d'une vue n'interrompt jamais la synchronisation ni l'import.
+
+## Pics de forme (Analyse › Pics)
+But : arriver au pic de forme le jour des courses objectifs, en reproduisant ce qui a précédé tes meilleurs pics (`js/core/peaks.js`, `js/views/peaks-view.js`).
+- **Tes pics passés** : chaque course passée de la saison (sauf « Ne compte pas ») avec au moins 8 semaines d'activités avant elle : forme et fraîcheur le matin, forme rapportée au plus haut des 12 mois précédents, volume des semaines J−8 à J−2, progression de la forme, longueur et ampleur de l'affûtage, plus longue séance. Score = forme du jour / plus haut de l'année × facteur de fraîcheur (1 entre +5 et +25). Ressenti à saisir sur chaque course (« Au top », « Correct », « À oublier », dans `objectives.raceFeeling`) : les courses « Au top » deviennent la référence, sinon les 3 meilleurs scores (hors « À oublier »).
+- **Ta recette** : médiane des pics de référence (forme et fraîcheur du jour J, heures par semaine, progression, plus longue séance, affûtage).
+- **Prochain pic** : pour chaque objectif à venir (puces pour choisir), forme du jour → forme visée (celle de la recette, sinon 95 % du plus haut de l'année), fraîcheur visée, faisabilité. Le calcul cherche la plus petite progression hebdomadaire qui atteint la forme visée (plafonnée à 1,25 × celle de la recette, entre 3 et 7 par semaine), une semaine calendaire sur quatre allégée à 70 %, puis l'affûtage (durée de la recette, sinon 7 à 14 j selon la course) avec la réduction de volume qui donne la fraîcheur visée le matin de la course.
+- **Projection** : forme et fraîcheur réelles des 12 dernières semaines, puis prévues en pointillé jusqu'à la course ; bande de fraîcheur idéale et période d'affûtage.
+- **Semaine par semaine** : heures visées (charge convertie avec ta charge moyenne par heure des 120 derniers jours) et ce qui compte dans la semaine selon la phase.
+- La carte « Prochain objectif » de la Saison affiche une ligne « Pic de forme » (forme du jour → visée, fraîcheur, Atteignable / Serré / Ambitieux) qui ouvre cet écran.
+- Phases automatiques reprend la durée d'affûtage de la recette dès que deux pics au moins servent de référence.
+
+## Niveau de détail des phases
+Un sélecteur **Essentiel · Phases · Détail** (Saison › Mon plan et Phases du mois, Analyse › Bilan des phases et Plan) règle l'affichage partout (réglage de l'appareil, `allure_phase_level`, `js/core/phase-level.js`) :
+- **Essentiel** (par défaut) : quatre grands blocs, Préparation générale, Spécifique, Affûtage, Récupération ; les phases qui se suivent dans un même bloc sont réunies ;
+- **Phases** : chaque type de phase, morceaux consécutifs d'un même type réunis ;
+- **Détail** : toutes les phases enregistrées, et les semaines allégées en barres plus claires dans « Mon plan ».
+Les phases enregistrées ne changent pas : seul l'affichage les regroupe. Un bloc qui réunit plusieurs phases ouvre la fiche du jour (Saison) ou la phase en cours (Analyse) ; les boutons modifier / supprimer restent sur les phases seules.
+
+## Style
+Style « Vivant » commun à Ma Maison, Mon Garage, Mon Budget et Carnet (`css/vivant.css`, chargé en dernier) : fond clair légèrement chaud (`#f6f4f2`, sombre `#121011`), cartes blanches arrondies (24 px) à ombre douce sans bordure, gros titres, barre du bas flottante, icônes en trait épais (2,2 px). Une seule famille de couleurs, la braise du logo Pouls (`#ff7a3d` → `#ff2d55`) : carte objectif et carte « Prochain pic » en dégradé, phases en tons abricot, orange, rouge, cramoisi, or (affûtage) et taupe (récupération), sports et graphiques dans les mêmes tons ; plus aucun bleu ni violet. Les anciennes couleurs d'origine des types de phase enregistrées dans `objectives.phaseTypes` passent automatiquement aux nouvelles (une couleur choisie à la main est gardée). Seuls les états restent en vert / ambre / rouge (inscription, fraîcheur).
 
 ## Phases automatiques
 Ajouter › **Phases automatiques** (ou ⚙︎ › Réglages) : chaque course à venir est classée **Objectif**, **Préparation** (défaut) ou **Ne compte pas** (aussi dans la fiche de la course, champ « Importance » ; stocké dans `objectives.racePriority`). Seuls les objectifs placent les phases, à rebours : foncier, spécifique volume puis intensité (6 semaines), affûtage de 7 à 14 jours selon distance et D+ (≥ 60 km ou ≥ 2 500 m D+ : 14 j ; ≥ 21 km ou ≥ 1 000 m : 10 j), récupération après chaque objectif (raccourcie si le suivant est proche) et coupure de 2 semaines après le dernier. « Recalculer à partir du » (aujourd'hui par défaut) : les phases d'avant cette date ne changent pas. Les phases faites à la main (champ `origin: 'manual'` ; les anciennes sans `origin` sont manuelles sauf note « Auto · … ») qui touchent la période sont listées, cochées par défaut : une phase cochée reste telle quelle et le plan se place autour (bout de moins d'une semaine rattaché à la phase précédente), une décochée est recalculée. « Appliquer ce plan » (confirmation) : la phase en cours s'arrête la veille ou est prolongée si le plan commence par le même type.

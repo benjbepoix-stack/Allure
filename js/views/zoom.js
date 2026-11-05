@@ -13,6 +13,9 @@ import { state } from '../core/store.js';
 import { MEASURE_FIELDS } from '../core/schema.js';
 import { phaseType, getPhases, phaseOn, racesOn } from '../core/season.js';
 import { racePriority } from '../core/planner.js';
+import { displayOn, displayPhases, levelSwitchHTML, phaseLevel, setPhaseLevel } from '../core/phase-level.js';
+import { planWeek } from '../core/plan.js';
+import { peakHeroLine } from './peaks-view.js';
 import { readText, write } from '../services/storage.js';
 import { icon } from '../ui/icons.js';
 import { openSheet, isOpen } from '../ui/dialog.js';
@@ -29,6 +32,7 @@ let sheet = { kind: 'day', key: todayKey() }; // fiche ouverte : jour ou semaine
 let silentNext = false;
 let regFilter = ''; // filtre des courses par état d'inscription ('' = toutes)
 let onCatalog = () => {};
+let onPeaks = () => {};
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const daysBetween = (a, b) => Math.round((fromKey(b) - fromKey(a)) / 86400000);
@@ -96,6 +100,7 @@ function regReminderHTML() {
 function monthHTML() {
   const t = todayKey();
   const phases = getPhases();
+  const disp = displayPhases(phases);
   const first = firstOfMonth(focus);
   const last = lastOfMonth(focus);
   const start = mondayOf(fromKey(first));
@@ -107,30 +112,32 @@ function monthHTML() {
     cells.push(`<button type="button" class="zcal__wk" data-go="week" data-key="${monday}" aria-label="Semaine ${isoWeek(monday)}">S${isoWeek(monday)}</button>`);
     for (let i = 0; i < 7; i++) {
       const key = dateKey(addDays(fromKey(monday), i));
-      const p = phaseOn(key, phases);
+      const p = displayOn(key, disp);
       const races = racesOn(key);
       const out = monthOf(key) !== monthOf(focus);
-      const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? phaseType(p.type).name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
-      const cls = ['zcal__d', p ? `phase--${p.type}` : '', races.length ? 'is-race' : '', key === t ? 'is-today' : '', out ? 'is-out' : ''].filter(Boolean).join(' ');
+      const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? p.name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
+      const cls = ['zcal__d', p ? p.cls : '', races.length ? 'is-race' : '', key === t ? 'is-today' : '', out ? 'is-out' : ''].filter(Boolean).join(' ');
       cells.push(`<button type="button" class="${cls}" data-go="day" data-key="${key}" aria-label="${esc(label)}">${fromKey(key).getDate()}</button>`);
     }
   }
-  const inMonth = phases.filter(p => p.start <= last && p.end >= first);
+  const inMonth = disp.filter(p => p.start <= last && p.end >= first);
   const phaseRows = inMonth
-    .map(
-      p => `<div class="zphase phase--${p.type}">
+    .map(p => {
+      const one = p.members.length === 1;
+      const sub = one ? '' : ` · ${p.members.length} phases`;
+      return `<div class="zphase ${p.cls}">
         <button type="button" class="zphase__main" data-go="day" data-key="${p.start < first ? first : p.start}">
-          <span class="phase-dot"></span><span class="zrow__body"><strong>${esc(phaseType(p.type).name)}</strong><span>${shortDate(p.start)} → ${shortDate(p.end)}${p.note ? ` · ${esc(p.note)}` : ''}</span></span>
+          <span class="phase-dot"></span><span class="zrow__body"><strong>${esc(p.name)}</strong><span>${shortDate(p.start)} → ${shortDate(p.end)}${sub}${p.note ? ` · ${esc(p.note)}` : ''}</span></span>
         </button>
-        <button type="button" class="icon-btn icon-btn--sm" data-act="phase-edit" data-id="${esc(p.id)}" aria-label="Modifier la phase">${icon('edit', 16)}</button>
-        <button type="button" class="icon-btn icon-btn--sm icon-btn--danger" data-act="phase-delete" data-id="${esc(p.id)}" aria-label="Supprimer la phase">${icon('trash', 16)}</button>
-      </div>`
-    )
+        ${one ? `<button type="button" class="icon-btn icon-btn--sm" data-act="phase-edit" data-id="${esc(p.id)}" aria-label="Modifier la phase">${icon('edit', 16)}</button>
+        <button type="button" class="icon-btn icon-btn--sm icon-btn--danger" data-act="phase-delete" data-id="${esc(p.id)}" aria-label="Supprimer la phase">${icon('trash', 16)}</button>` : ''}
+      </div>`;
+    })
     .join('');
   const now = new Date();
   const races = sortedRaces().filter(r => monthOf(r.date) === monthOf(focus));
   return `<div class="zcal" role="group" aria-label="${esc(monthTitle(focus))}"><span></span>${head}${cells.join('')}</div>
-    <h2 class="zsec">Phases du mois</h2>
+    <div class="zsec zsec--row"><h2>Phases du mois</h2>${levelSwitchHTML()}</div>
     ${inMonth.length ? `<div class="zlist">${phaseRows}</div>` : '<p class="zempty">Aucune phase ce mois-ci. Touchez Ajouter pour en planifier une.</p>'}
     ${races.length ? `<h2 class="zsec">Courses</h2><div class="zlist">${[...races].reverse().map(r => raceRow(r, now)).join('')}</div>` : ''}`;
 }
@@ -295,13 +302,15 @@ function heroHTML() {
     </span>
     <span class="shero__dates"><span>Début : ${shortDate(start)}</span><span>${goal ? 'Objectif' : 'Course'} : ${shortDate(r.date)}</span></span>
     <span class="shero__bar" role="progressbar" aria-label="Préparation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((done / total) * 100)}"><i style="width:${Math.max(2, (done / total) * 100)}%"></i></span>
-  </button>`;
+  </button>${goal ? peakHeroLine(r) : ''}`;
 }
 
 /* ---------- Plan : semaines colorées par phase ---------- */
 function planHTML() {
   const t = todayKey();
   const phases = getPhases();
+  const level = phaseLevel();
+  const disp = displayPhases(phases, level);
   const goal = nextGoal();
   const thisMonday = mondayOf(fromKey(t));
   const goalStart = goal ? fromKey(prepStart(goal)) : null;
@@ -317,9 +326,12 @@ function planHTML() {
   for (let i = 0; i < n; i++) {
     const monday = dateKey(addDays(from, i * 7));
     const sunday = dateKey(addDays(from, i * 7 + 6));
-    const p = phaseOn(dateKey(addDays(from, i * 7 + 3)), phases);
+    const mid = dateKey(addDays(from, i * 7 + 3));
+    const raw = phaseOn(mid, phases);
+    const p = displayOn(mid, disp);
+    const light = level === 3 && raw ? planWeek(monday, 1)?.light : false;
     const races = state.races.filter(r => r.date >= monday && r.date <= sunday);
-    weeks.push({ monday, sunday, p, races, goal: races.some(r => racePriority(r.id) === 'A'), now: t >= monday && t <= sunday, past: sunday < t });
+    weeks.push({ monday, sunday, p, raw, light, races, goal: races.some(r => racePriority(r.id) === 'A'), now: t >= monday && t <= sunday, past: sunday < t });
   }
   // Libellés de phase au-dessus des groupes de semaines (assez larges pour être lus).
   const labels = [];
@@ -327,15 +339,15 @@ function planHTML() {
     if (!w.p || (i > 0 && weeks[i - 1].p?.id === w.p.id)) return;
     let j = i;
     while (j + 1 < n && weeks[j + 1].p?.id === w.p.id) j++;
-    if ((j - i + 1) / n >= 0.09) labels.push(`<span class="splan__ph phase--${w.p.type}" style="left:${(i / n) * 100}%">${esc(phaseType(w.p.type).short)}</span>`);
+    if ((j - i + 1) / n >= 0.09) labels.push(`<span class="splan__ph ${w.p.cls}" style="left:${(i / n) * 100}%">${esc(w.p.short)}</span>`);
   });
   const bars = weeks
     .map(w => {
-      const h = w.p ? Math.max(14, Math.round(phaseType(w.p.type).load * 100)) : 8;
-      const label = [`Semaine du ${shortDate(w.monday)}`, w.p ? phaseType(w.p.type).name : 'aucune phase', ...w.races.map(r => `course : ${r.name}`)].join(', ');
+      const h = w.raw ? Math.max(14, Math.round(phaseType(w.raw.type).load * 100 * (w.light ? 0.7 : 1))) : 8;
+      const label = [`Semaine du ${shortDate(w.monday)}`, w.p ? w.p.name : 'aucune phase', w.light ? 'semaine allégée' : '', ...w.races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
       return `<button type="button" class="splan__w${w.now ? ' is-now' : ''}${w.past ? ' is-past' : ''}" data-go="week" data-key="${w.monday}" aria-label="${esc(label)}">
         ${w.races.length ? `<span class="splan__race${w.goal ? ' is-goal' : ''}"></span>` : ''}
-        <span class="splan__bar ${w.p ? `phase--${w.p.type}` : 'is-empty'}" style="height:${h}%"></span></button>`;
+        <span class="splan__bar ${w.p ? w.p.cls : 'is-empty'}${w.light ? ' is-light' : ''}" style="height:${h}%"></span></button>`;
     })
     .join('');
   const step = n > 30 ? 2 : 1;
@@ -353,14 +365,14 @@ function planHTML() {
     .join('');
 
   // Compteurs : semaine de préparation, phase en cours, inscriptions.
-  const cur = phaseOn(t, phases);
+  const cur = displayOn(t, disp);
   const upcoming = sortedRaces().filter(r => isUpcoming(r));
   const reg = countRegistrations(upcoming);
   const prepWeeks = goal ? Math.max(1, Math.ceil(daysBetween(prepStart(goal), goal.date) / 7)) : 0;
   const prepNow = goal ? Math.min(prepWeeks, Math.max(0, Math.floor(daysBetween(prepStart(goal), t) / 7) + 1)) : 0;
   const stats = [
     goal ? ['Semaine', `${prepNow}<small>/${prepWeeks}</small>`] : ['Semaine', `${isoWeek(t)}`],
-    ['Phase', cur ? `<i class="phase-dot phase--${cur.type}"></i>${esc(phaseType(cur.type).short)}` : '—'],
+    ['Phase', cur ? `<i class="phase-dot ${cur.cls}"></i>${esc(cur.short)}` : '—'],
     ['Inscrit', `${reg.done}<small>/${upcoming.length}</small>`]
   ]
     .map(([l, v]) => `<div class="sstat"><span>${l}</span><strong>${v}</strong></div>`)
@@ -368,6 +380,7 @@ function planHTML() {
 
   return `<section class="scard">
     <header class="scard__head"><h2>Mon plan</h2><button type="button" class="link-btn" data-act="planner">Phases auto</button></header>
+    ${levelSwitchHTML(level)}
     <div class="splan" style="--n:${n}">
       <div class="splan__labels">${labels.join('')}</div>
       <div class="splan__bars" role="group" aria-label="Semaines de la saison">${bars}</div>
@@ -381,15 +394,16 @@ function planHTML() {
 function thisWeekHTML() {
   const t = todayKey();
   const phases = getPhases();
+  const disp = displayPhases(phases);
   const monday = mondayOf(fromKey(t));
   const days = [];
   for (let i = 0; i < 7; i++) {
     const key = dateKey(addDays(monday, i));
-    const p = phaseOn(key, phases);
+    const p = displayOn(key, disp);
     const races = racesOn(key);
     const d = fromKey(key);
-    const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? phaseType(p.type).name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
-    days.push(`<button type="button" class="sday${key === t ? ' is-today' : ''}${key < t ? ' is-past' : ''}${races.length ? ' is-race' : ''}${p ? ` phase--${p.type}` : ''}" data-go="day" data-key="${key}" aria-label="${esc(label)}">
+    const label = [formatKey(key, { weekday: 'long', day: 'numeric', month: 'long' }), p ? p.name : '', ...races.map(r => `course : ${r.name}`)].filter(Boolean).join(', ');
+    days.push(`<button type="button" class="sday${key === t ? ' is-today' : ''}${key < t ? ' is-past' : ''}${races.length ? ' is-race' : ''}${p ? ` ${p.cls}` : ''}" data-go="day" data-key="${key}" aria-label="${esc(label)}">
       <span>${formatDate(d, { weekday: 'narrow' })}</span><strong>${d.getDate()}</strong><i></i></button>`);
   }
   const p = phaseOn(t, phases);
@@ -409,7 +423,7 @@ function thisWeekHTML() {
 function upcomingHTML() {
   const t = todayKey();
   const now = new Date();
-  const phases = getPhases();
+  const disp = displayPhases(getPhases());
   const horizon = dateKey(addDays(fromKey(t), 365));
   const upcoming = sortedRaces().filter(r => isUpcoming(r, now) && r.date <= horizon);
   const n = countRegistrations(upcoming);
@@ -419,11 +433,11 @@ function upcomingHTML() {
     ...races.map(r => ({ date: r.date, html: raceRow(r, now, { day: true }) })),
     ...(filter
       ? []
-      : phases
+      : disp
           .filter(p => p.start > t && p.start <= horizon)
           .map(p => ({
             date: p.start,
-            html: `<button type="button" class="srow-phase phase--${p.type}" data-go="day" data-key="${p.start}"><i class="phase-dot"></i><span><b>${esc(phaseType(p.type).name)}</b> · ${shortDate(p.start)} → ${shortDate(p.end)}</span></button>`
+            html: `<button type="button" class="srow-phase ${p.cls}" data-go="day" data-key="${p.start}"><i class="phase-dot"></i><span><b>${esc(p.name)}</b> · ${shortDate(p.start)} → ${shortDate(p.end)}</span></button>`
           })))
   ].sort((a, b) => a.date.localeCompare(b.date) || (a.html.startsWith('<button type="button" class="srow-phase') ? -1 : 1));
   const chip = (id, label, count) =>
@@ -587,6 +601,7 @@ function onClick(e) {
       case 'race-reg': return saveRegistration(id, act.dataset.reg);
       case 'catalog': return onCatalog();
       case 'planner': return openPlanner();
+      case 'peaks': return onPeaks();
       case 'reg-filter':
         regFilter = act.dataset.reg;
         return renderZoom();
@@ -596,6 +611,11 @@ function onClick(e) {
         return $('#saisonUpcoming')?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
     }
     return;
+  }
+  const lvl = e.target.closest('[data-phase-level]');
+  if (lvl) {
+    setPhaseLevel(Number(lvl.dataset.phaseLevel));
+    return renderZoom();
   }
   const go = e.target.closest('[data-go]');
   if (!go?.dataset.key) return;
@@ -620,8 +640,9 @@ function onResultChange(e) {
   }
 }
 
-export function initZoom({ openCatalog } = {}) {
+export function initZoom({ openCatalog, openPeaks } = {}) {
   if (openCatalog) onCatalog = openCatalog;
+  if (openPeaks) onPeaks = openPeaks;
   mode = readText(MODE_KEY, 'plan') === 'cal' ? 'cal' : 'plan';
   const body = $('#zoomBody');
   body.addEventListener('animationend', () => body.classList.remove('is-slide-next', 'is-slide-prev', 'is-fade'));

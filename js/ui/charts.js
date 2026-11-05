@@ -2,7 +2,7 @@
 import { esc } from '../core/utils.js';
 import { formatKey } from '../core/dates.js';
 
-export const PALETTE = ['#2ee6a8', '#6c8cff', '#ffc24b', '#ff7a85', '#b48cff', '#4fd1d9', '#ff9ecf', '#9aa8bf'];
+export const PALETTE = ['#ff5a3c', '#ffa23d', '#e0245e', '#b8461f', '#ffc23d', '#f28aa8', '#7d5442', '#a39a92'];
 
 /**
  * Anneau de répartition.

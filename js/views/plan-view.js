@@ -7,6 +7,7 @@ import { addDays, dateKey, formatKey, fromKey, mondayOf, todayKey, daysUntil } f
 import { planHorizon, planWeek, referenceHours } from '../core/plan.js';
 import { analysisSettings } from '../core/training.js';
 import { getPhases, phaseType } from '../core/season.js';
+import { displayPhases, levelSwitchHTML, phaseLevel } from '../core/phase-level.js';
 
 const nf = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const dur = min => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${String(Math.round(min % 60)).padStart(2, '0')}` : ''}` : `${Math.round(min)} min`);
@@ -55,16 +56,20 @@ function volumeChart(weeks, done, selected, today) {
 
 /* Phases en cours et à venir, chacune modifiable (dates, type, note). */
 function phasesCard(phases, today) {
-  const list = phases.filter(p => p.end >= today);
+  const level = phaseLevel();
+  const list = displayPhases(phases, level).filter(p => p.end >= today);
   const rows = list
     .map(p => {
-      const t = phaseType(p.type);
       const weeks = Math.round((fromKey(p.end) - fromKey(p.start)) / (7 * 864e5) + 1 / 7);
-      return `<li><button type="button" class="pl-phase" data-edit-phase="${esc(p.id)}" style="--ph:${t.color}">
-        <i></i><span><strong>${esc(t.name)}</strong><small>${short(p.start)} → ${short(p.end)} · ${weeks} sem.${p.note ? ` · ${esc(p.note)}` : ''}</small></span><span class="pl-phase__e">Modifier</span></button></li>`;
+      // Un bloc qui réunit plusieurs phases ouvre celle d'aujourd'hui (sinon la première à venir).
+      const target = p.members.find(m => m.start <= today && today <= m.end) || p.members.find(m => m.end >= today) || p.members[0];
+      const sub = p.members.length > 1 ? ` · ${p.members.length} phases` : '';
+      return `<li><button type="button" class="pl-phase ${p.cls}" data-edit-phase="${esc(target.id)}">
+        <i></i><span><strong>${esc(p.name)}</strong><small>${short(p.start)} → ${short(p.end)} · ${weeks} sem.${sub}${p.note ? ` · ${esc(p.note)}` : ''}</small></span><span class="pl-phase__e">Modifier</span></button></li>`;
     })
     .join('');
   return `<section class="card an-card"><header><h2 class="card__title">Phases</h2><p class="card__sub">Touche une phase pour changer ses dates, son type ou la supprimer</p></header>
+    ${levelSwitchHTML(level)}
     <ul class="pl-phases">${rows}</ul>
     <div class="pl-actions"><button type="button" class="btn btn--sm" data-action="add-phase">Ajouter une phase</button><button type="button" class="btn btn--sm" data-action="planner">Phases automatiques</button></div></section>`;
 }

@@ -6,6 +6,7 @@ import { PHASE_TYPES_KEY, allPhaseTypes, phaseTypes, getPhases, inkFor } from '.
 import { openSheet, closeSheet, confirmDialog, isOpen } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
+import { blockColorCSS } from '../core/phase-level.js';
 
 const LOADS = [0.2, 0.4, 0.6, 0.8, 0.95];
 const nearestLoad = v => LOADS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
@@ -25,6 +26,7 @@ export function applyPhaseColors() {
       const light = t.light ? `\n:root[data-theme="light"] ${sel} { --ph: ${t.light}; }` : '';
       return `${sel} { --ph: ${t.color}; --ph-ink: ${inkFor(t.color)}; }${light}`;
     })
+    .concat(blockColorCSS(inkFor))
     .join('\n');
 }
 
@@ -108,7 +110,7 @@ function openTypeEditor(id = null) {
   $('#phaseTypeTitle').textContent = t ? 'Modifier le type' : 'Nouveau type';
   form.elements.name.value = t?.name || '';
   form.elements.short.value = t?.short || '';
-  form.elements.color.value = t?.color || '#2f80ff';
+  form.elements.color.value = t?.color || '#ff8a3d';
   form.elements.load.value = String(nearestLoad(t?.load ?? 0.6));
   form.elements.spec.checked = t?.group === 'spec';
   form.elements.advice.value = t?.advice || '';
@@ -136,7 +138,7 @@ function onTypeSubmit(e) {
     name: v.name,
     short: v.short || v.name.slice(0, 20),
     advice: v.advice,
-    color: /^#[0-9a-f]{6}$/i.test(v.color) ? v.color.toLowerCase() : '#2f80ff',
+    color: /^#[0-9a-f]{6}$/i.test(v.color) ? v.color.toLowerCase() : '#ff8a3d',
     load: Number(v.load) || 0.6,
     ...(form.elements.spec.checked ? { group: 'spec' } : {})
   };
