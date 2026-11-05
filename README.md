@@ -23,9 +23,11 @@ Inscriptions : chaque course à venir a un état d'inscription, **À faire** (ro
 
 Types de phase : le menu « Phase » de l'éditeur (lien « Modifier la liste ») et ⚙︎ › Réglages ouvrent la liste des types : ajouter, renommer (nom et nom court), changer la couleur, la charge (hauteur des barres de l'année) et le conseil, classer dans « Préparation spécifique », réordonner ou retirer. Un type retiré qui sert encore à des phases est seulement masqué du menu : ces phases gardent leur nom et leur couleur.
 
-**Suivi** : courbes du poids et de la FTP, mensurations, historiques. **Analyse** : export RunGap. **Ajouter** : course, phase, poids, test FTP, mensurations ; avec la fiche d'un jour ouverte, la course ou la phase ajoutée prend cette date ; une course enregistrée depuis la Saison ouvre la fiche de son jour.
-## Analyse (export RunGap)
-Onglet **Analyse** : « Importer l’export RunGap » lit le CSV complet exporté de RunGap (toutes les séances, tous sports). À chaque mise à jour, on redépose le fichier entier : seules les activités plus récentes que la dernière connue sont ajoutées ; les doublons Suunto / Garmin (départs à moins de 10 min) sont fusionnés. Les activités restent **sur l’appareil** (`allure_activities`, ~100 Ko pour 1 200 séances) : le nœud Firebase partagé avec Carnet n’accepte pas de nouvelle tranche.
+**Suivi** : courbes du poids et de la FTP, mensurations, historiques. **Analyse** : activités Strava. **Ajouter** : course, phase, poids, test FTP, mensurations ; avec la fiche d'un jour ouverte, la course ou la phase ajoutée prend cette date ; une course enregistrée depuis la Saison ouvre la fiche de son jour.
+## Analyse (Strava)
+Onglet **Analyse** : « Connecter Strava » récupère les activités directement depuis Strava (plus d'export RunGap). Strava n'accepte que le flux OAuth avec secret : on crée une fois son application d'API personnelle sur strava.com/settings/api (domaine de rappel = domaine de l'app), on saisit l'ID client et le secret client dans la fiche Strava, puis on autorise Cadence. La première synchronisation reprend tout l'historique (200 activités par requête) ; ensuite, seules les activités depuis la dernière connue (marge de 2 jours) sont demandées, automatiquement à l'ouverture de l'Analyse au plus une fois par heure, ou avec « Synchroniser Strava ». Les sports Strava (`sport_type`) sont convertis vers les noms de l'export RunGap (`js/services/strava.js`), donc toute l'analyse fonctionne pareil ; les doublons avec un ancien import (départs à moins de 10 min) sont fusionnés en gardant la séance la plus complète. Identifiants et jetons restent sur l'appareil (`allure_strava`), jamais dans Firebase.
+
+Ancien import : la fiche Strava garde « Importer un fichier CSV » (export RunGap) en secours.
 
 Deux affichages : **Bilan** et **Plan**. En Bilan, la période (menu, ‹ ›) et le sport (menu) restent collés sous l'en-tête au défilement.
 
@@ -83,7 +85,7 @@ Aucune règle à publier : le projet `test-e27e9` autorise déjà chaque compte 
 
 ## Apparence
 Style minimaliste (anthracite, cartes pleines), couleur **Braise** (dégradé orangé → rouge vif), également couleur des courses dans le calendrier ; chaque type de phase a sa propre teinte franche (bleu, indigo, violet, magenta, jaune, vert, gris par défaut, modifiable). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
-Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) : trois barres qui montent comme la charge d'entraînement, la blanche pour la coupure avant la course.
+Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) : au style des autres apps de l'écran d'accueil (Maison, Garage, Budget, Carnet) : fond blanc, pictogramme au trait épais arrondi en dégradé (cyan → bleu). Quatre barres sur une ligne de base, comme la charge qui monte puis la coupure avant la course. Les PNG sont pleins cadre (iOS et Android arrondissent eux-mêmes).
 
 ## Structure
 ```

@@ -6,7 +6,7 @@
    À l'installation, l'app-shell (HTML/CSS/JS/icônes) est aussi pré-mis en cache :
    un tout premier lancement hors ligne (avant toute visite en ligne réussie)
    affiche donc l'app au lieu d'un écran blanc. */
-const CACHE = 'allure-v23';
+const CACHE = 'allure-v24';
 
 const PRECACHE_URLS = [
   './',
@@ -35,6 +35,7 @@ const PRECACHE_URLS = [
   './js/config/firebase-config.js',
   './js/services/storage.js',
   './js/services/firebase.js',
+  './js/services/strava.js',
   './js/views/season.js',
   './js/views/phase-types.js',
   './js/views/races.js',
@@ -45,6 +46,7 @@ const PRECACHE_URLS = [
   './js/data/catalog-cyclo.js',
   './js/data/catalog-ski.js',
   './js/views/analysis.js',
+  './js/views/strava.js',
   './js/views/planner.js',
   './js/core/activities.js',
   './js/core/training.js',

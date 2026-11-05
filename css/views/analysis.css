@@ -195,3 +195,19 @@
 .plan-keep label { display: grid; grid-template-columns: 20px 10px minmax(0, 1fr); gap: 10px; align-items: start; padding: 6px 0; font-size: var(--fs-sm); cursor: pointer; }
 .plan-keep input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); }
 .plan-rows li.is-kept .plan-row__name small { color: var(--accent); font-weight: 700; }
+
+/* ---------- Strava ---------- */
+.an-info__link { display: inline; margin: 0; padding: 0; font-size: inherit; }
+.strava-body { display: flex; flex-direction: column; gap: var(--sp-3); }
+.strava-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-sm); color: var(--text-2); }
+.strava-steps a { color: #fc4c02; font-weight: 650; }
+.strava-copy { padding: 2px 6px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); cursor: copy; word-break: break-all; }
+.strava-body .an-note { word-break: break-word; }
+.btn--strava { --btn-bg: #fc4c02; --btn-fg: #fff; box-shadow: 0 8px 22px -10px #fc4c02; }
+.strava-account { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+.strava-account > div { display: flex; flex-direction: column; min-width: 0; }
+.strava-account span:not(.strava-account__dot) { font-size: var(--fs-xs); color: var(--text-3); }
+.strava-account__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #fc4c02; box-shadow: 0 0 0 4px rgba(252, 76, 2, .18); }
+.strava-links { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.link-btn--danger { color: var(--danger); }
+.strava-body .field-error:empty { display: none; }

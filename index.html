@@ -159,10 +159,10 @@
       </section>
     </section>
 
-    <!-- ================= ANALYSE : export RunGap ================= -->
+    <!-- ================= ANALYSE : activités Strava ================= -->
     <section id="analysisView" class="view" hidden aria-labelledby="headerTitle">
       <div class="an-head">
-        <button type="button" class="btn btn--primary btn--sm" id="analysisImport"><span>Importer l’export RunGap</span></button>
+        <button type="button" class="btn btn--primary btn--sm" id="analysisImport"><span>Connecter Strava</span></button>
         <button type="button" class="btn btn--soft btn--sm" id="analysisHr" aria-label="Réglages de l’analyse"><span data-icon="settings" data-size="16"></span><span>Réglages</span></button>
         <input type="file" id="analysisFile" accept=".csv,.txt,text/csv,text/plain,text/comma-separated-values,application/csv" hidden>
       </div>
@@ -377,6 +377,15 @@
           <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Strava : connexion, synchronisation, import CSV de secours -->
+  <div class="sheet-backdrop" id="stravaSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="stravaTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><div><h2 class="sheet__title" id="stravaTitle">Strava</h2><p class="sheet__sub" id="stravaSub"></p></div><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="strava-body" id="stravaBody"></div>
     </div>
   </div>
 
