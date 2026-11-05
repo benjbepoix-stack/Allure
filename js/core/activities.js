@@ -185,6 +185,24 @@ export function mergeExport(text) {
   return { added: fresh.length, total: list.length, first: !current.length };
 }
 
+/**
+ * Ajoute des activités déjà lues (synchronisation Strava) : réunion avec celles de
+ * l'appareil, doublons (départs à moins de 10 min) fusionnés en gardant la plus complète.
+ * @param {Array<object>} incoming activités au format de readExport (avec `source`)
+ * @returns {{added:number, total:number, first:boolean}}
+ */
+export function mergeActivities(incoming, { source = 'Strava' } = {}) {
+  const outdated = importInfo()?.v !== VERSION;
+  const current = outdated ? [] : getActivities();
+  // Les activités déjà présentes passent en premier à richesse égale : elles sont conservées.
+  const known = current.map(a => ({ ...a, source: 'Cadence' }));
+  const list = dedupe(known.concat(incoming.map(a => ({ ...a, source }))));
+  save(list);
+  const added = Math.max(0, list.length - current.length);
+  write(META_KEY, { at: Date.now(), added, total: list.length, v: VERSION, from: source });
+  return { added, total: list.length, first: !current.length };
+}
+
 /** Oublie toutes les activités de l'appareil (autre compte connecté). */
 export function clearActivities() {
   cache = [];

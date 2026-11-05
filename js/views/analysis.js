@@ -1,5 +1,5 @@
 /*
- * Vue Analyse : indicateurs calculés depuis l'export RunGap (toutes les séances).
+ * Vue Analyse : indicateurs calculés depuis les activités Strava (ou un export CSV RunGap).
  * Forme / fatigue / fraîcheur, volume par sport, intensité, repos, bilan des
  * phases de Cadence, efficacité, puissance / FC, records et jour J des courses.
  */
@@ -19,6 +19,8 @@ import { openPlanner } from './planner.js';
 import { openPhaseEditor } from './season.js';
 import { toast, toastError } from '../ui/toast.js';
 import { readText, write } from '../services/storage.js';
+import { initStrava, maybeAutoSync, openStravaSheet, stravaButtonLabel, stravaStatus, syncStrava } from './strava.js';
+import { isConnected } from '../services/strava.js';
 
 const PERIOD_KEY = 'allure_analysis_period';
 const W = 340;
@@ -465,9 +467,12 @@ function renderSports(acts) {
 function renderHead(list, range) {
   const info = importInfo();
   const last = list[list.length - 1];
+  const synced = stravaStatus();
+  $('#analysisImport').firstElementChild.textContent = stravaButtonLabel();
   $('#analysisInfo').innerHTML = list.length
-    ? `Dernière activité : ${formatKey(last.date, { day: 'numeric', month: 'short', year: 'numeric' })} · ${nf(list.length)} activités${info?.at ? ` · import du ${new Date(info.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '')}` : ''}`
-    : 'Aucune activité importée sur cet appareil.';
+    ? `Dernière activité : ${formatKey(last.date, { day: 'numeric', month: 'short', year: 'numeric' })} · ${nf(list.length)} activités · ${esc(synced || (info?.at ? `import du ${new Date(info.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '')}` : ''))}`.replace(/ · $/, '')
+    : synced ? `${esc(synced)} · aucune activité reçue pour l’instant.` : 'Aucune activité sur cet appareil.';
+  if (synced) $('#analysisInfo').insertAdjacentHTML('beforeend', ' <button type="button" class="link-btn an-info__link" data-action="strava">Gérer</button>');
   $$('#analysisModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
   $('#analysisBar').hidden = !list.length || mode === 'plan';
   $('#analysisPeriod').value = period;
@@ -477,6 +482,7 @@ function renderHead(list, range) {
 }
 
 export function renderAnalysis() {
+  maybeAutoSync();
   const list = getActivities();
   const body = $('#analysisBody');
   if (mode === 'plan') {
@@ -487,8 +493,8 @@ export function renderAnalysis() {
   if (!list.length) {
     renderHead(list, null);
     body.innerHTML = `<section class="card an-card an-start"><h2 class="card__title">Importer tes entraînements</h2>
-      <ol><li>Dans RunGap : Activités › Exporter › format CSV (toutes les activités).</li><li>Touche « Importer l’export RunGap » ci-dessus et choisis le fichier.</li><li>À chaque mise à jour, redépose le fichier complet : seules les nouvelles activités sont ajoutées.</li></ol>
-      <p class="an-note">Les activités restent sur cet appareil.</p></section>`;
+      <ol><li>Touche « Connecter Strava » ci-dessus.</li><li>Crée une fois ton application d’API Strava et autorise Cadence.</li><li>Tout ton historique arrive, puis les nouvelles séances à chaque ouverture de l’Analyse.</li></ol>
+      <p class="an-note">Plus besoin d’export RunGap. Les activités restent sur cet appareil.</p></section>`;
     return;
   }
   const s = analysisSettings();
@@ -589,8 +595,16 @@ function onSettings(e) {
 }
 
 export function initAnalysis() {
-  $('#analysisImport').addEventListener('click', () => $('#analysisFile').click());
+  $('#analysisImport').addEventListener('click', () => (isConnected() ? syncStrava() : openStravaSheet()));
+  $('#analysisInfo').addEventListener('click', e => e.target.closest('[data-action="strava"]') && openStravaSheet());
   $('#analysisFile').addEventListener('change', onFile);
+  initStrava({
+    onChange: () => {
+      memo = { list: null };
+      renderAnalysis();
+    },
+    onImportFile: () => $('#analysisFile').click()
+  });
   $('#analysisHr').addEventListener('click', openSettings);
   $('#analysisForm').addEventListener('submit', onSettings);
   $('#analysisPeriod').addEventListener('change', e => {
