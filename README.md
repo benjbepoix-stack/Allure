@@ -85,7 +85,7 @@ Aucune règle à publier : le projet `test-e27e9` autorise déjà chaque compte 
 
 ## Apparence
 Style minimaliste (anthracite, cartes pleines), couleur **Braise** (dégradé orangé → rouge vif), également couleur des courses dans le calendrier ; chaque type de phase a sa propre teinte franche (bleu, indigo, violet, magenta, jaune, vert, gris par défaut, modifiable). Bouton ⚙︎ › Réglages : thème **Auto** (suit le réglage clair / sombre de l'iPhone, par défaut), Sombre ou Clair, mémorisé sur l'appareil. Un ancien choix « Sombre » (ancien défaut) devient « Auto » une seule fois ; « Clair » est conservé. Le thème est appliqué avant le premier rendu (pas de flash).
-Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) : au style des autres apps de l'écran d'accueil (Maison, Garage, Budget, Carnet) : fond blanc, pictogramme au trait épais arrondi en dégradé (cyan → bleu). Quatre barres sur une ligne de base, comme la charge qui monte puis la coupure avant la course. Les PNG sont pleins cadre (iOS et Android arrondissent eux-mêmes).
+Icône **Cadence** (`icon.svg`, déclinée en PNG ; aussi `logos/cadence.svg`) : au style des autres apps de l'écran d'accueil (Maison, Garage, Budget, Carnet) : fond blanc, pictogramme au trait épais arrondi en dégradé aux couleurs de l'app (#ff7a3d → #ff2d55, comme les boutons). Pictogramme « Pouls » : une ligne de fréquence cardiaque. Les PNG sont pleins cadre (iOS et Android arrondissent eux-mêmes).
 
 ## Structure
 ```
