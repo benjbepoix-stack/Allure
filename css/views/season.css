@@ -13,7 +13,7 @@
 #phaseTypeList .icon-btn:disabled { opacity: .3; }
 .ptype-add { margin-top: var(--sp-4); }
 .ptype-check { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
-.ptype-check input { width: 20px; height: 20px; accent-color: #ff2d55; }
+.ptype-check input { width: 20px; height: 20px; accent-color: var(--accent); }
 .input--color { padding: 6px; height: 48px; cursor: pointer; }
 .input--color::-webkit-color-swatch-wrapper { padding: 0; }
 .input--color::-webkit-color-swatch { border: 0; border-radius: calc(var(--r-md) - 4px); }

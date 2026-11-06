@@ -3,8 +3,8 @@
   "short_name": "Cadence",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#16171c",
-  "theme_color": "#16171c",
+  "background_color": "#f6f4f2",
+  "theme_color": "#f6f4f2",
   "icons": [
     {
       "src": "icon-192.png",

@@ -8,7 +8,7 @@ import { readText, write } from '../services/storage.js';
 
 const KEY = 'allure_theme';
 const AUTO_MIGRATED = 'allure_theme_auto_v1';
-const THEME_COLORS = { dark: '#16171c', light: '#f4f4f7' };
+const THEME_COLORS = { dark: '#121011', light: '#f6f4f2' };
 const lightMedia = window.matchMedia?.('(prefers-color-scheme: light)');
 
 /** Choix enregistré : auto, dark ou light. */

@@ -10,6 +10,7 @@ import { phaseType } from '../core/season.js';
 import { PRIORITIES, applyPlan, manualFrom, mergePlan, planPhases, racePriority, withPriority } from '../core/planner.js';
 import { openSheet, closeSheet, confirmDialog, isOpen } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
+import { recipeTaperDays } from '../core/peaks.js';
 
 const short = key => formatKey(key, { day: 'numeric', month: 'short' });
 const weeks = (a, b) => {
@@ -52,7 +53,7 @@ function renderPlanner() {
     : '<p class="an-empty">Aucune course à venir. Ajoute tes courses (bouton Ajouter), puis reviens ici.</p>';
 
   renderKeep(from);
-  const plan = planPhases(from);
+  const plan = planPhases(from, { taperDays: recipeTaperDays() });
   $('#planApply').disabled = !plan.length;
   if (!plan.length) {
     $('#planPreview').innerHTML = races.length ? '<p class="an-empty">Choisis au moins une course « Objectif » pour placer les phases.</p>' : '';
@@ -83,7 +84,7 @@ function renderPlanner() {
     })
     .join('');
   $('#planPreview').innerHTML = `<p class="field__label">Résultat</p><div class="plan-bar">${bar}${marks}</div><ol class="plan-rows">${rows}</ol>
-    <p class="settings-hint">Affûtage de 7 à 14 jours selon la distance et le D+, 6 semaines de spécifique (volume puis intensité), foncier avant, récupération après chaque objectif et coupure après le dernier.</p>`;
+    <p class="settings-hint">${recipeTaperDays() ? `Affûtage de ${recipeTaperDays()} jours, la durée qui a précédé tes meilleurs pics de forme (Analyse › Pics)` : 'Affûtage de 7 à 14 jours selon la distance et le D+'}, 6 semaines de spécifique (volume puis intensité), foncier avant, récupération après chaque objectif et coupure après le dernier.</p>`;
 }
 
 export function openPlanner() {
@@ -96,7 +97,7 @@ export function openPlanner() {
 
 async function onApply() {
   const from = fromDate();
-  const plan = planPhases(from);
+  const plan = planPhases(from, { taperDays: recipeTaperDays() });
   if (!plan.length) return;
   const keep = keepIds(from);
   const ok = await confirmDialog({

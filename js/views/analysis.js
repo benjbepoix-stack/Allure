@@ -6,7 +6,9 @@
 import { $, $$, esc, parseNumber } from '../core/utils.js';
 import { addDays, formatKey, fromKey, todayKey } from '../core/dates.js';
 import { state, commit } from '../core/store.js';
-import { getPhases, phaseType } from '../core/season.js';
+import { getPhases } from '../core/season.js';
+import { displayPhases, levelSwitchHTML, setPhaseLevel } from '../core/phase-level.js';
+import { renderPeaks, onPeaksClick } from './peaks-view.js';
 import { getActivities, importInfo, mergeExport } from '../core/activities.js';
 import { racePriority } from '../core/planner.js';
 import {
@@ -28,7 +30,8 @@ let period = PERIODS.some(p => p.id === readText(PERIOD_KEY, '')) ? readText(PER
 let offset = 0;
 const MODE_KEY = 'allure_analysis_mode';
 const SPORT_KEY = 'allure_analysis_sport';
-let mode = readText(MODE_KEY, 'bilan') === 'plan' ? 'plan' : 'bilan';
+const MODES = ['bilan', 'pics', 'plan'];
+let mode = MODES.includes(readText(MODE_KEY, 'bilan')) ? readText(MODE_KEY, 'bilan') : 'bilan';
 let sport = readText(SPORT_KEY, 'all');
 let memo = { list: null, settings: '', series: null };
 
@@ -121,12 +124,11 @@ function loadChart(allDays, start, end, phases, races) {
     const a = p.start < start ? start : p.start;
     const b = p.end > end ? end : p.end;
     if (a > b) continue;
-    const t = phaseType(p.type);
     const xa = X(a);
     const xb = X(dateKeyAfter(b));
-    svg += `<rect x="${xa}" y="${y0}" width="${Math.max(1, xb - xa)}" height="${y1 - y0}" fill="${t.color}" opacity=".1"><title>${esc(t.name)} · ${shortDate(p.start)} → ${shortDate(p.end)}</title></rect>`;
-    svg += `<rect x="${xa}" y="${y1 + 3}" width="${Math.max(1, xb - xa - 1)}" height="4" rx="2" fill="${t.color}"/>`;
-    if (xb - xa > 34) svg += `<text x="${xa + 3}" y="${y0 + 9}" class="an-svg-ph">${esc(t.short)}</text>`;
+    svg += `<rect x="${xa}" y="${y0}" width="${Math.max(1, xb - xa)}" height="${y1 - y0}" fill="${p.color}" opacity=".1"><title>${esc(p.name)} · ${shortDate(p.start)} → ${shortDate(p.end)}</title></rect>`;
+    svg += `<rect x="${xa}" y="${y1 + 3}" width="${Math.max(1, xb - xa - 1)}" height="4" rx="2" fill="${p.color}"/>`;
+    if (xb - xa > 34) svg += `<text x="${xa + 3}" y="${y0 + 9}" class="an-svg-ph">${esc(p.short)}</text>`;
   }
   [0, mx / 2, mx].forEach(v => (svg += `<line x1="30" x2="${W - 6}" y1="${Y(v)}" y2="${Y(v)}" class="an-grid"/>${v ? `<text x="26" y="${Y(v) + 3}" text-anchor="end">${nf(v)}</text>` : ''}`));
   svg += `<line x1="30" x2="${W - 6}" y1="${tb}" y2="${tb}" class="an-grid"/><text x="26" y="${tb + 3}" text-anchor="end">0</text>`;
@@ -359,7 +361,7 @@ function phasesSection(all, acts, days, start, end, phases, s) {
       if (!ds.length) return '';
       const as = acts.filter(x => x.date >= a && x.date <= b);
       const sum = summarize(as, ds, s);
-      const t = phaseType(p.type);
+      const t = p;
       const hard = sum.minutes ? (100 * sum.byZone.hard) / sum.minutes : 0;
       return `<tr><td><span class="an-ph"><i style="background:${t.color}"></i><span>${esc(t.short)}<small>${shortDate(p.start)} → ${shortDate(p.end)}</small></span></span></td><td>${nf(sum.hoursPerWeek, 1)}</td><td>${nf(sum.restPerWeek, 1)}</td><td>${nf(hard)} %</td><td>${nf(ds[0].ctl)} → ${nf(ds[ds.length - 1].ctl)}<span class="an-cell-pill">${phaseVerdict(p, t, ds[0], ds[ds.length - 1])}</span></td></tr>`;
     })
@@ -368,7 +370,7 @@ function phasesSection(all, acts, days, start, end, phases, s) {
   return card(
     'Bilan des phases',
     'Ce que chaque phase a produit : forme au début → à la fin',
-    `<div class="an-table"><table><thead><tr><th>Phase</th><th>h/sem</th><th>Repos</th><th>Dur</th><th>Forme</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="an-note">h/sem et Repos : par semaine. Dur : part du temps en dur. Sous la forme : son évolution (affûtage : fraîcheur le dernier jour). Récupération et coupure : la baisse est normale.</p>`
+    `${levelSwitchHTML()}<div class="an-table"><table><thead><tr><th>Phase</th><th>h/sem</th><th>Repos</th><th>Dur</th><th>Forme</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="an-note">h/sem et Repos : par semaine. Dur : part du temps en dur. Sous la forme : son évolution (affûtage : fraîcheur le dernier jour). Récupération et coupure : la baisse est normale.</p>`
   );
 }
 
@@ -474,7 +476,7 @@ function renderHead(list, range) {
     : synced ? `${esc(synced)} · aucune activité reçue pour l’instant.` : 'Aucune activité sur cet appareil.';
   if (synced) $('#analysisInfo').insertAdjacentHTML('beforeend', ' <button type="button" class="link-btn an-info__link" data-action="strava">Gérer</button>');
   $$('#analysisModes [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
-  $('#analysisBar').hidden = !list.length || mode === 'plan';
+  $('#analysisBar').hidden = !list.length || mode !== 'bilan';
   $('#analysisPeriod').value = period;
   $('#analysisRange').textContent = range?.label || '';
   $('#analysisPrev').disabled = !range?.hasPrev;
@@ -490,6 +492,11 @@ export function renderAnalysis() {
     renderPlan(body, list);
     return;
   }
+  if (mode === 'pics') {
+    renderHead(list, null);
+    renderPeaks(body);
+    return;
+  }
   if (!list.length) {
     renderHead(list, null);
     body.innerHTML = `<section class="card an-card an-start"><h2 class="card__title">Importer tes entraînements</h2>
@@ -500,6 +507,7 @@ export function renderAnalysis() {
   const s = analysisSettings();
   const all = series();
   const phases = getPhases();
+  const shown = displayPhases(phases);
   let range = periodRange(period, offset, { phases, first: list[0].date });
   renderHead(list, range);
   const lastKey = all[all.length - 1].key;
@@ -517,10 +525,10 @@ export function renderAnalysis() {
   body.innerHTML = [
     range.note ? `<p class="an-note">${esc(range.note)}</p>` : '',
     kpis(acts, days, streakAlert(days, s), s),
-    loadSection(days, start, end, phases, races),
+    loadSection(days, start, end, shown, races),
     volumeSection(sport === 'all' ? acts : acts.filter(a => familyOf(a) === sport), sum, start, end),
     restSection(days, sum, start, end, s),
-    phasesSection(all, acts, days, start, end, phases, s),
+    phasesSection(all, acts, days, start, end, shown, s),
     racesSection(days, start, end, acts),
     efficiencySection(acts, start, end),
     powerSection(acts, start, end),
@@ -626,6 +634,12 @@ export function initAnalysis() {
     renderAnalysis();
   });
   $('#analysisBody').addEventListener('click', e => {
+    const lvl = e.target.closest('[data-phase-level]');
+    if (lvl) {
+      setPhaseLevel(Number(lvl.dataset.phaseLevel));
+      return renderAnalysis();
+    }
+    if (mode === 'pics' && onPeaksClick(e)) return renderAnalysis();
     const week = e.target.closest('[data-plan-week], [data-week]');
     if (week) {
       const key = week.dataset.planWeek ?? week.dataset.week;
@@ -646,4 +660,10 @@ export function initAnalysis() {
     offset = Math.max(0, offset - 1);
     renderAnalysis();
   });
+}
+
+/** Ouvre l'Analyse sur les pics de forme (depuis la carte objectif de la Saison). */
+export function showPeaks() {
+  mode = 'pics';
+  write(MODE_KEY, mode);
 }

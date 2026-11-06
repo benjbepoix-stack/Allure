@@ -16,7 +16,7 @@ import { initSeason, openPhaseEditor } from './views/season.js';
 import { refreshPhaseTypes } from './views/phase-types.js';
 import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './views/metrics.js';
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
-import { initAnalysis, renderAnalysis } from './views/analysis.js';
+import { initAnalysis, renderAnalysis, showPeaks } from './views/analysis.js';
 import { initCatalog, renderCatalog } from './views/catalog.js';
 import { initPlanner, openPlanner, refreshPlanner } from './views/planner.js';
 import { clearActivities } from './core/activities.js';
@@ -227,7 +227,13 @@ function init() {
   initRaces({ saved: race => currentView === 'zoomView' && showDay(race.date) });
   initSeason();
   initMetrics();
-  initZoom({ openCatalog: () => switchView('catalogView') });
+  initZoom({
+    openCatalog: () => switchView('catalogView'),
+    openPeaks: () => {
+      showPeaks();
+      switchView('analysisView');
+    }
+  });
   initCatalog({
     openDay: key => {
       switchView('zoomView');

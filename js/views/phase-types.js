@@ -6,6 +6,7 @@ import { PHASE_TYPES_KEY, allPhaseTypes, phaseTypes, getPhases, inkFor } from '.
 import { openSheet, closeSheet, confirmDialog, isOpen } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
+import { blockColorCSS } from '../core/phase-level.js';
 
 const LOADS = [0.2, 0.4, 0.6, 0.8, 0.95];
 const nearestLoad = v => LOADS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
@@ -25,6 +26,7 @@ export function applyPhaseColors() {
       const light = t.light ? `\n:root[data-theme="light"] ${sel} { --ph: ${t.light}; }` : '';
       return `${sel} { --ph: ${t.color}; --ph-ink: ${inkFor(t.color)}; }${light}`;
     })
+    .concat(blockColorCSS(inkFor))
     .join('\n');
 }
 
