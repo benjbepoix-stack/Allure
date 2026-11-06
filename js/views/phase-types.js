@@ -110,7 +110,7 @@ function openTypeEditor(id = null) {
   $('#phaseTypeTitle').textContent = t ? 'Modifier le type' : 'Nouveau type';
   form.elements.name.value = t?.name || '';
   form.elements.short.value = t?.short || '';
-  form.elements.color.value = t?.color || '#ff8a3d';
+  form.elements.color.value = t?.color || '#2f80ff';
   form.elements.load.value = String(nearestLoad(t?.load ?? 0.6));
   form.elements.spec.checked = t?.group === 'spec';
   form.elements.advice.value = t?.advice || '';
@@ -138,7 +138,7 @@ function onTypeSubmit(e) {
     name: v.name,
     short: v.short || v.name.slice(0, 20),
     advice: v.advice,
-    color: /^#[0-9a-f]{6}$/i.test(v.color) ? v.color.toLowerCase() : '#ff8a3d',
+    color: /^#[0-9a-f]{6}$/i.test(v.color) ? v.color.toLowerCase() : '#2f80ff',
     load: Number(v.load) || 0.6,
     ...(form.elements.spec.checked ? { group: 'spec' } : {})
   };

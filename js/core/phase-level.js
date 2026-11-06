@@ -22,12 +22,12 @@ export const LEVELS = [
   { id: 3, name: 'Détail', hint: 'Toutes les phases et les semaines allégées' }
 ];
 
-/* Grands blocs : nom, nom court et couleur (teintes de la palette braise). */
+/* Grands blocs : nom, nom court et couleur (celle du type de phase principal du bloc). */
 export const BLOCKS = {
-  prep: { id: 'prep', name: 'Préparation générale', short: 'Prépa', color: '#ffa86b', light: '#f08f4e' },
-  spec: { id: 'spec', name: 'Préparation spécifique', short: 'Spécifique', color: '#ff5a3c' },
-  taper: { id: 'taper', name: 'Affûtage', short: 'Affûtage', color: '#ffc23d', light: '#e6a200' },
-  rest: { id: 'rest', name: 'Récupération', short: 'Récup', color: '#c8b6a4', light: '#b09a85' }
+  prep: { id: 'prep', name: 'Préparation générale', short: 'Prépa', color: '#2f80ff' },
+  spec: { id: 'spec', name: 'Préparation spécifique', short: 'Spécifique', color: '#7a3cf0' },
+  taper: { id: 'taper', name: 'Affûtage', short: 'Affûtage', color: '#f5b400', light: '#e9a800' },
+  rest: { id: 'rest', name: 'Récupération', short: 'Récup', color: '#10b981', light: '#0ea371' }
 };
 
 export function phaseLevel() {

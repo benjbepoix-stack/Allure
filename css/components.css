@@ -58,7 +58,7 @@
   box-shadow: var(--shadow-accent);
 }
 .btn--primary:hover:not(:disabled) { box-shadow: 0 12px 28px -8px rgba(46, 230, 168, .6); }
-.btn--blue { --btn-bg: linear-gradient(135deg, #ff7a3d, #ff2d55); --btn-fg: #fff; box-shadow: 0 8px 22px -8px rgba(255, 45, 85, .6); }
+.btn--blue { --btn-bg: var(--gradient-accent); --btn-fg: var(--accent-ink); box-shadow: var(--shadow-accent); }
 .btn--amber { --btn-bg: linear-gradient(135deg, #ffc24b, #ff9f43); --btn-fg: #2b1d00; box-shadow: 0 8px 22px -8px rgba(255, 170, 60, .55); }
 .btn--add {
   --btn-bg: var(--accent-soft);
