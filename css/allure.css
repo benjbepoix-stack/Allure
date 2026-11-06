@@ -37,9 +37,9 @@
   --text-3: #9295a2;
 }
 
-/* ---------- Couleurs : Braise (rouge orangé → rouge vif), aussi couleur des courses ---------- */
-:root, :root[data-theme="light"] { --accent: #ff5a3c; --accent-2: #ff2d55; --accent-ink: #fff; --accent-soft: rgba(255, 74, 60, .15); --gradient-accent: linear-gradient(135deg, #ff7a3d, #ff2d55); --shadow-accent: 0 10px 24px -10px rgba(255, 45, 85, .6); --race: #ff3b4a; --race-ink: #fff; }
-:root[data-theme="light"] { --accent: #e5352b; --accent-soft: rgba(229, 53, 43, .1); --race: #ec2f3d; }
+/* ---------- Couleurs : Encre (graphite), aussi couleur des courses ; css/vivant.css les précise ---------- */
+:root, :root[data-theme="light"] { --accent: #f4f3f1; --accent-2: #d6d3ce; --accent-ink: #141414; --accent-soft: rgba(244, 243, 241, .1); --gradient-accent: linear-gradient(135deg, #fbfaf8, #d9d6d1); --shadow-accent: 0 10px 24px -14px rgba(0, 0, 0, .9); --race: #f4f3f1; --race-ink: #141414; }
+:root[data-theme="light"] { --accent: #18181b; --accent-2: #3a3a40; --accent-ink: #fff; --accent-soft: rgba(24, 24, 27, .07); --gradient-accent: linear-gradient(135deg, #2e2e34, #121214); --shadow-accent: 0 12px 24px -12px rgba(18, 18, 20, .45); --race: #18181b; --race-ink: #fff; }
 /* États d'inscription : à faire (rouge), incomplète (ambre), complète (vert). */
 :root, :root[data-theme="light"] { --reg-todo: var(--danger); --reg-partial: var(--amber); --reg-done: #2ee6a8; }
 :root[data-theme="light"] { --reg-partial: #c98a0c; --reg-done: #0f9f70; }
