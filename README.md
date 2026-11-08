@@ -5,7 +5,18 @@ _Anciennement **Allure** : le dépôt, les clés de stockage local (`allure_…`
 App sport (PWA installable sur iPhone) : courses, phases d'entraînement et mesures (poids, FTP vélo, mensurations).
 
 ## Navigation
-Barre du bas : **Saison**, **Courses**, **Suivi**, **Analyse** et **Ajouter**.
+Barre du bas : **Aujourd'hui**, **Saison**, **Courses**, **Stats** et **Ajouter**. Suivi s'ouvre depuis le bas d'Aujourd'hui, l'Analyse détaillée (et la connexion Strava) depuis le bas de Stats. L'app s'ouvre toujours sur Aujourd'hui.
+
+### Aujourd'hui
+- **Prochaine course** (hors « Ne compte pas ») : J−, semaines, forme du sport de la course et progression nécessaire pour être prêt (85).
+- **Forme par sport** (`js/core/form.js`) : sur 100, où 100 = ton meilleur niveau dans ce sport sur 2 ans. Trois groupes : Ski (ski de fond + ski-roue : temps sur les skis 50 %, endurance tous sports 30 %, séances dures 20 %), Course & trail (groupés : séances de qualité 35 %, dénivelé 25 %, sortie longue 20 %, vitesse à effort égal 20 %), Vélo (volume 60 %, sortie longue 25 %, séances dures 15 %). Volume et dénivelé sur 6 semaines, le reste sur 4. Toucher un sport ouvre le calcul détaillé. Fraîcheur du jour en mots (Reposé / Normal / Chargé).
+- **Phases jusqu'à la prochaine course** seulement (bande proportionnelle + liste), « Voir jusqu'à … » / « Toute la saison » / « Réduire ».
+- **Cette semaine** : phase en cours, conseil, séances Strava de la semaine.
+
+### Stats
+Version simple de l'Analyse (`js/views/stats.js`) : sport (Tout, Ski, Course & trail, Vélo) et période (4 semaines, 3 mois, 12 mois) ; temps, séances, distance et dénivelé comparés à la période précédente ; volume par semaine (par mois sur 12 mois) coloré par sport ; courbe de la forme sur 100 des 6 derniers mois.
+
+Saison › Plan affiche les phases jusqu'à la prochaine course, au prochain objectif ou toute la saison, puis les courses à venir. Le mode « Pics » de l'Analyse est retiré (remplacé par la forme par sport).
 
 ### Saison
 Deux affichages, choisis en haut : **Plan** (par défaut) et **Calendrier**.

@@ -1,0 +1,481 @@
+<title>Cadence · Par sport</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Style « encre » de Cadence : fond clair, cartes blanches, graphite ; la couleur est réservée aux sports et aux phases. */
+:root {
+  --bg: #f4f4f1; --card: #ffffff; --card-2: #f1f1ee; --line: rgba(20, 20, 24, .1);
+  --ink: #18181b; --ink-2: #5f5f66; --ink-3: #9a9aa0;
+  --accent: #18181b; --accent-ink: #ffffff;
+  --hero: linear-gradient(150deg, #2e2e34 0%, #121214 100%); --hero-ink: #ffffff; --hero-2: rgba(255, 255, 255, .62);
+  --ok: #0e9f6e; --ok-soft: rgba(16, 185, 129, .13); --mid: #c98a00; --mid-soft: rgba(245, 180, 0, .16); --low: #e5484d; --low-soft: rgba(229, 72, 77, .12);
+  --shadow: 0 1px 2px rgba(20, 20, 24, .04), 0 8px 24px -16px rgba(20, 20, 24, .25);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212; --card: #1c1c1e; --card-2: #262628; --line: rgba(255, 255, 255, .1);
+    --ink: #f4f3f1; --ink-2: #aeaba7; --ink-3: #77746f; --accent: #f4f3f1; --accent-ink: #141414;
+    --hero: linear-gradient(150deg, #36363c 0%, #222226 100%);
+    --ok: #34d399; --ok-soft: rgba(52, 211, 153, .14); --mid: #f5b400; --mid-soft: rgba(245, 180, 0, .15); --low: #ff6b72; --low-soft: rgba(255, 107, 114, .14);
+    --shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121212; --card: #1c1c1e; --card-2: #262628; --line: rgba(255, 255, 255, .1);
+  --ink: #f4f3f1; --ink-2: #aeaba7; --ink-3: #77746f; --accent: #f4f3f1; --accent-ink: #141414;
+  --hero: linear-gradient(150deg, #36363c 0%, #222226 100%);
+  --ok: #34d399; --ok-soft: rgba(52, 211, 153, .14); --mid: #f5b400; --mid-soft: rgba(245, 180, 0, .15); --low: #ff6b72; --low-soft: rgba(255, 107, 114, .14);
+  --shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body { color: var(--ink); font: 15px/1.45 var(--font); -webkit-font-smoothing: antialiased; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 24px; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 10px; }
+.top-note { max-width: 430px; margin: 0 auto 12px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.top-note b { color: var(--ink); font-size: 13px; letter-spacing: .02em; }
+.phone { position: relative; max-width: 430px; margin: 0 auto; min-height: 760px; background: var(--bg); border-radius: 34px; box-shadow: 0 0 0 1px var(--line), 0 30px 60px -40px rgba(0, 0, 0, .45); overflow: hidden; display: flex; flex-direction: column; }
+.screen { flex: 1; padding: 18px 16px 104px; display: flex; flex-direction: column; gap: 14px; }
+.screen[hidden] { display: none; }
+h1 { font: 800 30px/1.1 var(--font-d); letter-spacing: -.03em; margin: 4px 0 0; text-wrap: balance; }
+h2 { font: 750 19px/1.2 var(--font-d); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h3 { font: 700 15px/1.25 var(--font-d); margin: 0; }
+.eyebrow { margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.muted { color: var(--ink-2); margin: 0; }
+.card { background: var(--card); border-radius: 22px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.between { justify-content: space-between; }
+.num { font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 99px; font: 700 12px var(--font); vertical-align: middle; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.mid { background: var(--mid-soft); color: var(--mid); }
+.pill.low { background: var(--card-2); color: var(--ink-2); }
+.pill.ghost { background: var(--card-2); color: var(--ink-2); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.link { font-weight: 700; font-size: 14px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+.btn { height: 44px; border-radius: 14px; background: var(--card-2); font-weight: 700; font-size: 14px; padding: 0 16px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.seg { display: flex; background: var(--card-2); border-radius: 14px; padding: 4px; gap: 4px; }
+.seg button { flex: 1; height: 36px; border-radius: 10px; font-size: 13.5px; font-weight: 650; color: var(--ink-2); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.meter { height: 8px; border-radius: 99px; background: var(--card-2); overflow: hidden; position: relative; }
+.meter i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+.spark { width: 100%; height: auto; display: block; }
+.spark-l { fill: var(--ink-3); font: 600 10px var(--font); }
+/* Dock */
+.dock { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 62px; background: var(--card); border-radius: 22px; box-shadow: 0 0 0 1px var(--line), 0 14px 30px -18px rgba(0, 0, 0, .5); display: flex; padding: 6px; gap: 4px; z-index: 5; }
+.dock button { flex: 1; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11.5px; font-weight: 650; color: var(--ink-3); }
+.dock button svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dock button[aria-current="page"] { color: var(--ink); background: var(--card-2); }
+/* Feuille */
+#sheet { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.sheet-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); opacity: 0; transition: opacity .25s; }
+.sheet-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 88%; overflow: auto; background: var(--card); border-radius: 26px 26px 0 0; padding: 22px 18px 28px; transform: translateY(105%); transition: transform .32s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; }
+#sheet.open { pointer-events: auto; }
+#sheet.open .sheet-bg { opacity: 1; }
+#sheet.open .sheet-panel { transform: none; }
+.sheet-body { display: flex; flex-direction: column; gap: 12px; }
+.sheet-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: var(--card-2); font-size: 22px; line-height: 1; color: var(--ink-2); }
+.sheet-title { font-size: 26px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-right: 40px; }
+.sheet-title small { font-size: 15px; color: var(--ink-3); font-weight: 600; }
+.recipe { display: flex; flex-direction: column; gap: 14px; }
+.recipe-row { display: flex; flex-direction: column; gap: 6px; }
+.recipe-top, .recipe-bot { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; flex-wrap: wrap; }
+.recipe-bot { font-size: 12.5px; color: var(--ink-2); }
+.note { margin: 0; font-size: 13px; color: var(--ink-2); background: var(--card-2); border-radius: 14px; padding: 10px 12px; }
+.advice { margin: 0; font-weight: 650; }
+.kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.kv div { background: var(--card-2); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.kv span { font-size: 11.5px; color: var(--ink-2); }
+.kv b { font: 750 18px var(--font-d); font-variant-numeric: tabular-nums; }
+.foot { max-width: 430px; margin: 14px auto 0; font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.strip { position: relative; padding-top: 22px; }
+.strip-bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; gap: 2px; }
+.strip-bar i { display: block; height: 100%; }
+.strip-here { position: absolute; top: 0; bottom: -4px; width: 2px; background: var(--ink); transform: translateX(-1px); border-radius: 2px; }
+.strip-here em { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); font: 700 10.5px var(--font); font-style: normal; background: var(--ink); color: var(--card); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+.strip-ends { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--ink-3); }
+.ph-row { display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 8px; border-radius: 14px; width: 100%; }
+.ph-row.cur { background: var(--card-2); }
+.ph-c { width: 6px; align-self: stretch; border-radius: 4px; flex: none; }
+.ph-t { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ph-t small { color: var(--ink-2); font-size: 12.5px; }
+.ph-aim { font-size: 12px; font-weight: 650; color: var(--ink-2); text-align: right; flex: none; max-width: 40%; }
+.ph-race { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 2px 0 6px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.ph-race b { flex: 1; font-size: 14px; }
+.ph-race small { opacity: .7; font-size: 12.5px; }
+.flag { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.gauge-card { align-items: center; text-align: center; gap: 6px; }
+.gauge { width: 100%; max-width: 270px; height: auto; display: block; }
+.gauge-n { font: 800 58px/1 var(--font-d); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.gauge-t { fill: var(--ink-3); font: 650 11px var(--font); }
+.gauge-sub { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.lead { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 34ch; }
+.ing { display: flex; flex-direction: column; gap: 14px; }
+.ing-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: baseline; }
+.ing-row .meter { grid-column: 1 / -1; height: 10px; }
+.ing-w { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--card-2); border-radius: 6px; padding: 2px 7px; }
+.ing-d { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.weights { display: flex; height: 26px; border-radius: 10px; overflow: hidden; gap: 2px; }
+.weights span { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+.nr { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; }
+.nr-j { background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 8px 10px; text-align: center; font: 800 20px/1 var(--font-d); font-variant-numeric: tabular-nums; flex: none; }
+.nr-j small { display: block; font-size: 10.5px; font-weight: 650; opacity: .7; margin-top: 3px; }
+.nr-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.nr-t small { color: var(--ink-2); font-size: 12.5px; }
+.dock.sports button { gap: 4px; }
+.dock.sports .sc { font: 800 16px/1 var(--font-d); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.dock.sports button[aria-current="page"] .sc { color: var(--c); }
+.dock.sports .bar { width: 22px; height: 3px; border-radius: 3px; background: var(--c); opacity: .35; }
+.dock.sports button[aria-current="page"] .bar { opacity: 1; }
+.compare { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.compare button { background: var(--card-2); border-radius: 14px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 650; color: var(--ink-2); }
+.compare .cb { width: 100%; height: 46px; display: flex; align-items: flex-end; justify-content: center; }
+.compare .cb i { width: 18px; border-radius: 5px 5px 2px 2px; display: block; }
+.compare b { font: 750 15px var(--font-d); color: var(--ink); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="top-note"><b>Maquette B · Par sport</b><span>Chaque sport a sa page, sa recette et sa course. La barre du bas, ce sont tes sports.</span></div>
+<div class="phone">
+  <section class="screen" id="v">
+    <div class="head">
+      <div><p class="eyebrow" id="eb"></p><h1 id="h"></h1></div>
+      <span class="pill ok" title="Fraîcheur des 7 derniers jours">Reposé</span>
+    </div>
+    <div class="card gauge-card">
+      <svg class="gauge" viewBox="0 0 240 140" id="gauge" role="img"></svg>
+      <div class="gauge-sub" id="gsub"></div>
+      <p class="lead" id="lead"></p>
+    </div>
+    <div class="card">
+      <div class="row between"><h2>Ce qui fait ta forme</h2><button class="link" id="how">Comment ?</button></div>
+      <div class="weights" id="weights" aria-label="Poids de chaque élément"></div>
+      <div class="ing" id="ing"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><h2>Évolution</h2><span class="muted" style="font-size:12.5px">par semaine · pointillé : prévu</span></div>
+      <div id="spark"></div>
+    </div>
+    <div class="card">
+      <button class="nr" id="nr"></button>
+      <div id="strip"></div>
+      <div id="phases"></div>
+      <button class="btn" id="morebtn"></button>
+    </div>
+    <div class="card">
+      <h2>Tes sports côte à côte</h2>
+      <div class="compare" id="compare"></div>
+      <p class="muted" style="font-size:12.5px">Chaque barre est mesurée par rapport à ton propre meilleur niveau dans ce sport.</p>
+    </div>
+  </section>
+  <nav class="dock sports" aria-label="Sports" id="dock"></nav>
+</div>
+<p class="foot">Chiffres de forme calculés depuis tes activités Strava (juillet → 8 novembre 2026). Les références d'hiver et de trail, le trail de printemps et les dates 2027 non confirmées sont des exemples.</p>
+
+<script>
+/* Données communes aux trois maquettes.
+ * Vélo, course, trail, ski-roue : chiffres réels tirés de Strava (juillet → 8 novembre 2026).
+ * Références d'hiver (ski) et de trail long : estimées pour la maquette.
+ * Score de forme d'un sport = 100 × (ce que tu fais maintenant / ce que tu faisais à ton meilleur niveau dans CE sport),
+ * pondéré selon ce qui compte dans ce sport. Zone « prêt » : 85 et plus. */
+const TODAY = '2026-11-08';
+
+const SPORTS = {
+  ski: {
+    id: 'ski', name: 'Ski de fond', short: 'Ski', color: '#14b8a6', score: 35, delta: +6,
+    ref: 'Janvier 2026, avant la Transju', target: 85,
+    lead: 'En ski, c’est le temps passé sur les skis (ou ski-roues) qui fait la forme.',
+    parts: [
+      { k: 'Ski et ski-roue', w: 50, v: 15, now: '44 min / sem', best: '5 h / sem' },
+      { k: 'Endurance tous sports', w: 30, v: 58, now: '4,6 h / sem', best: '8 h / sem' },
+      { k: 'Intensité', w: 20, v: 50, now: '1 séance dure / 2 sem', best: '1 / sem' }
+    ],
+    hist: [10, 12, 12, 12, 13, 14, 14, 16, 18, 20, 22, 25, 28, 30, 32, 34, 35],
+    advice: 'Passe à 2 sorties ski-roue par semaine, dont une longue (1 h 30).'
+  },
+  run: {
+    id: 'run', name: 'Course à pied', short: 'Course', color: '#ff6b4a', score: 75, delta: +5,
+    ref: 'Printemps 2026 (estimé)', target: 85,
+    lead: 'En course, ce sont les séances spécifiques et la vitesse qui comptent, plus que le volume.',
+    parts: [
+      { k: 'Séances de qualité', w: 50, v: 75, now: '3 en 4 sem (5×2′, 4×3′, tempo)', best: '4 en 4 sem' },
+      { k: 'Vitesse à effort égal', w: 30, v: 88, now: '4:15 /km en endurance', best: '4:00 /km' },
+      { k: 'Régularité', w: 20, v: 55, now: '2,2 sorties / sem', best: '4 / sem' }
+    ],
+    hist: [40, 40, 42, 44, 46, 48, 50, 52, 55, 58, 62, 65, 68, 70, 72, 74, 75],
+    advice: 'Garde une séance de qualité par semaine : tu es à 10 points du « prêt ».'
+  },
+  trail: {
+    id: 'trail', name: 'Trail', short: 'Trail', color: '#f2a516', score: 55, delta: +3,
+    ref: 'Saison trail 2025 (estimé)', target: 85,
+    lead: 'En trail, le dénivelé et la sortie longue font la différence. 100 = ton meilleur niveau à toi, pas un chiffre absolu.',
+    parts: [
+      { k: 'Dénivelé', w: 40, v: 54, now: '430 m D+ / sem', best: '800 m / sem' },
+      { k: 'Sortie longue', w: 30, v: 40, now: '59 min (3 nov.)', best: '2 h 30' },
+      { k: 'Côtes et intensité', w: 30, v: 70, now: '4×3′ et 5×2′ en côte', best: '1 séance / sem' }
+    ],
+    hist: [20, 22, 25, 28, 30, 33, 36, 38, 41, 44, 47, 49, 51, 52, 53, 54, 55],
+    advice: 'Allonge une sortie par semaine de 15 min jusqu’à 2 h.'
+  },
+  bike: {
+    id: 'bike', name: 'Vélo', short: 'Vélo', color: '#3d82f6', score: 31, delta: -4,
+    ref: 'Juillet 2026, avant l’Étape du Tour', target: 85,
+    lead: 'En vélo, c’est le volume qui fait la forme : les heures et la sortie longue.',
+    parts: [
+      { k: 'Volume', w: 60, v: 26, now: '1,8 h / sem', best: '6,9 h / sem' },
+      { k: 'Sortie longue', w: 25, v: 24, now: '1 h 36 (31 oct.)', best: '6 h 40' },
+      { k: 'Intensité', w: 15, v: 60, now: '1 séance dure / 2 sem', best: '1 / sem' }
+    ],
+    hist: [92, 95, 88, 84, 80, 78, 74, 70, 64, 58, 52, 47, 42, 38, 35, 33, 31],
+    advice: 'Normal en novembre : le vélo reviendra au printemps, rien à forcer.'
+  }
+};
+const SPORT_ORDER = ['ski', 'run', 'trail', 'bike'];
+const HIST_START = '2026-07-13'; // lundi de la 1re semaine de hist
+
+/* Courses à venir. */
+const RACES = [
+  { id: 'fb', name: 'La Foulée Blanche', sport: 'ski', date: '2027-01-31', prio: 'B', place: 'Autrans', dist: '42 km skating', proj: 86, est: true },
+  { id: 'tj', name: 'La Transjurassienne', sport: 'ski', date: '2027-02-14', prio: 'A', place: 'Lamoura → Mouthe', dist: '50 km classique', proj: 92 },
+  { id: 'tr', name: 'Trail de printemps', sport: 'trail', date: '2027-05-09', prio: 'A', place: 'Besançon', dist: '25 km · 1 100 m D+', proj: 88, example: true },
+  { id: 'et', name: 'L’Étape du Tour', sport: 'bike', date: '2027-07-11', prio: 'A', place: 'Alpes', dist: '≈ 170 km · 4 500 m D+', proj: 90, est: true }
+];
+
+/* Phases (blocs) jusqu’à l’Étape du Tour. race = id de la course qui clôt le bloc. */
+const PHASES = [
+  { b: 'prep', name: 'Reprise foncière', from: '2026-11-02', to: '2026-11-29', tip: 'Beaucoup d’endurance facile, tous sports. Une séance de qualité en course.', aim: 'Ski 35 → 45' },
+  { b: 'prep', name: 'Volume ski', from: '2026-11-30', to: '2027-01-03', tip: 'Monte le temps sur les skis : 4 à 6 h / sem, une sortie longue de 2 h.', aim: 'Ski 45 → 70' },
+  { b: 'spec', name: 'Spécifique ski', from: '2027-01-04', to: '2027-01-24', tip: 'Deux séances d’intensité (seuil, 4×6′) et une sortie de 2 h 30.', aim: 'Ski 70 → 84' },
+  { b: 'taper', name: 'Affûtage', from: '2027-01-25', to: '2027-01-30', tip: 'Volume divisé par deux, quelques accélérations. Tu dois arriver reposé.', aim: 'Ski 86 · reposé', race: 'fb' },
+  { b: 'rest', name: 'Récupération', from: '2027-02-01', to: '2027-02-05', tip: 'Facile et court. Dors.', aim: '' },
+  { b: 'taper', name: 'Affûtage', from: '2027-02-06', to: '2027-02-13', tip: 'Une séance courte au rythme course, le reste facile.', aim: 'Ski 92 · reposé', race: 'tj' },
+  { b: 'rest', name: 'Transition', from: '2027-02-15', to: '2027-02-28', tip: 'Coupe deux semaines, sports plaisir.', aim: '' },
+  { b: 'prep', name: 'Foncier course', from: '2027-03-01', to: '2027-04-04', tip: 'Sorties longues vallonnées, D+ en hausse.', aim: 'Trail 50 → 72' },
+  { b: 'spec', name: 'Spécifique trail', from: '2027-04-05', to: '2027-04-25', tip: 'Côtes, descente, sortie de 2 h 30 au profil de la course.', aim: 'Trail 72 → 86' },
+  { b: 'taper', name: 'Affûtage', from: '2027-04-26', to: '2027-05-08', tip: 'Garde l’intensité, coupe le volume.', aim: 'Trail 88 · reposé', race: 'tr' },
+  { b: 'rest', name: 'Récupération', from: '2027-05-09', to: '2027-05-23', tip: 'Récupère, puis reprends le vélo.', aim: '' },
+  { b: 'prep', name: 'Volume vélo', from: '2027-05-24', to: '2027-06-20', tip: 'Le volume avant tout : 8 à 10 h / sem.', aim: 'Vélo 40 → 80' },
+  { b: 'spec', name: 'Spécifique cols', from: '2027-06-21', to: '2027-07-04', tip: 'Longues ascensions au seuil, une sortie de 6 h.', aim: 'Vélo 80 → 88' },
+  { b: 'taper', name: 'Affûtage', from: '2027-07-05', to: '2027-07-10', tip: 'Courtes sorties avec quelques efforts.', aim: 'Vélo 90 · reposé', race: 'et' }
+];
+const BLOCKS = {
+  prep: { name: 'Préparation générale', short: 'Prépa', color: '#2f80ff' },
+  spec: { name: 'Spécifique', short: 'Spécifique', color: '#7a3cf0' },
+  taper: { name: 'Affûtage', short: 'Affûtage', color: '#e9a800' },
+  rest: { name: 'Récupération', short: 'Récup', color: '#10b981' }
+};
+
+/* Cette semaine (9 → 15 nov.), en phase « Reprise foncière ». */
+const WEEK = [
+  { d: 'Mar', sport: 'run', t: 'Course · 6×3′ au seuil', m: '50 min', key: true },
+  { d: 'Jeu', sport: 'ski', t: 'Ski-roue · endurance', m: '1 h 15', key: false },
+  { d: 'Sam', sport: 'ski', t: 'Ski-roue · sortie longue', m: '1 h 45', key: true },
+  { d: 'Dim', sport: 'trail', t: 'Trail vallonné', m: '1 h 20 · 400 m D+', key: true }
+];
+const FRESH = { label: 'Reposé', note: 'Charge des 7 derniers jours plus basse que d’habitude : tu peux charger.' };
+
+/* ---------- Outils ---------- */
+const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const toD = k => new Date(k + 'T12:00:00');
+const days = (a, b) => Math.round((toD(b) - toD(a)) / 864e5);
+const fmt = k => { const d = toD(k); return d.getDate() + ' ' + MOIS[d.getMonth()]; };
+const fmtRange = (a, b) => fmt(a) + ' → ' + fmt(b);
+const weeks = (a, b) => Math.max(1, Math.round((days(a, b) + 1) / 7));
+const status = s => (s >= 85 ? { t: 'Prêt', c: 'ok' } : s >= 50 ? { t: 'En route', c: 'mid' } : { t: 'En construction', c: 'low' });
+const race = id => RACES.find(r => r.id === id);
+const nextRace = (sport) => RACES.find(r => r.date > TODAY && (!sport || r.sport === sport));
+const nextGoal = () => RACES.find(r => r.date > TODAY && r.prio === 'A');
+/* Phases depuis aujourd’hui jusqu’à la course `rid` incluse. */
+function phasesUntil(rid) {
+  const r = race(rid);
+  return PHASES.filter(p => p.to >= TODAY && p.from <= r.date);
+}
+const currentPhase = () => PHASES.find(p => p.from <= TODAY && p.to >= TODAY);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* Petite courbe : historique (plein) + projection (pointillé) jusqu’à `projTo` points de plus vers `projVal`. */
+function sparkSVG(hist, color, { w = 320, h = 110, proj = 0, projVal = 0, band = true } = {}) {
+  const n = hist.length + proj;
+  const x = i => 8 + (i * (w - 16)) / (n - 1);
+  const y = v => h - 18 - ((h - 30) * v) / 100;
+  let pts = hist.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  let projPts = '';
+  if (proj) {
+    const last = hist[hist.length - 1];
+    const arr = [];
+    for (let k = 0; k <= proj; k++) {
+      const t = k / proj;
+      const v = last + (projVal - last) * (1 - Math.pow(1 - t, 1.6));
+      arr.push(`${x(hist.length - 1 + k).toFixed(1)},${y(v).toFixed(1)}`);
+    }
+    projPts = arr.join(' ');
+  }
+  const lx = x(hist.length - 1), ly = y(hist[hist.length - 1]);
+  const area = `${x(0)},${y(0)} ${pts} ${lx},${y(0)}`;
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="Évolution de la forme">
+    ${band ? `<rect x="0" y="${y(100)}" width="${w}" height="${y(85) - y(100)}" fill="var(--ok-soft)"/>
+    <text x="${w - 6}" y="${y(100) + 11}" text-anchor="end" class="spark-l">Zone prêt · 85+</text>` : ''}
+    <line x1="0" x2="${w}" y1="${y(50)}" y2="${y(50)}" stroke="var(--line)" stroke-dasharray="2 4"/>
+    <text x="4" y="${y(50) - 4}" class="spark-l">50</text>
+    <polygon points="${area}" fill="${color}" opacity=".12"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    ${proj ? `<polyline points="${projPts}" fill="none" stroke="${color}" stroke-width="2.2" stroke-dasharray="4 5" stroke-linecap="round"/>` : ''}
+    <circle cx="${lx}" cy="${ly}" r="5" fill="${color}" stroke="var(--card)" stroke-width="2.5"/>
+    <text x="8" y="${h - 3}" class="spark-l">juil.</text>
+    <text x="${lx}" y="${h - 3}" text-anchor="middle" class="spark-l">auj.</text>
+    ${proj ? `<text x="${w - 8}" y="${h - 3}" text-anchor="end" class="spark-l">course</text>` : ''}
+  </svg>`;
+}
+
+/* Feuille (bottom sheet) commune. */
+function openSheet(html) {
+  let s = document.getElementById('sheet');
+  if (!s) {
+    s = document.createElement('div');
+    s.id = 'sheet';
+    s.innerHTML = '<div class="sheet-bg" data-close></div><div class="sheet-panel" role="dialog" aria-modal="true"><button class="sheet-x" data-close aria-label="Fermer">×</button><div class="sheet-body"></div></div>';
+    document.querySelector('.phone').appendChild(s);
+    s.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeSheet(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  }
+  s.querySelector('.sheet-body').innerHTML = html;
+  s.classList.add('open');
+}
+function closeSheet() { document.getElementById('sheet')?.classList.remove('open'); }
+
+/* Explication d’un score de sport (utilisée par les 3 maquettes). */
+function sportSheet(id) {
+  const s = SPORTS[id];
+  const st = status(s.score);
+  return `<p class="eyebrow" style="color:${s.color}">${s.name}</p>
+  <h2 class="sheet-title">${s.score}<small> / 100</small> <span class="pill ${st.c}">${st.t}</span></h2>
+  <p class="muted">${esc(s.lead)}</p>
+  <div class="recipe">${s.parts.map(p => `
+    <div class="recipe-row">
+      <div class="recipe-top"><b>${p.k}</b><span class="muted">compte pour ${p.w} %</span></div>
+      <div class="meter"><i style="width:${p.v}%;background:${s.color}"></i></div>
+      <div class="recipe-bot"><span>Maintenant : ${p.now}</span><span>À ton meilleur : ${p.best}</span></div>
+    </div>`).join('')}
+  </div>
+  <p class="note">100 = ton meilleur niveau dans ce sport (${esc(s.ref)}). Chaque sport a sa propre échelle : 55 en trail et 75 en course veulent dire « 55 % et 75 % de toi au mieux ».</p>
+  <p class="advice">${esc(s.advice)}</p>`;
+}
+
+function raceSheet(id) {
+  const r = race(id), s = SPORTS[r.sport];
+  const left = days(TODAY, r.date);
+  return `<p class="eyebrow" style="color:${s.color}">${s.name} · ${r.prio === 'A' ? 'Objectif' : 'Préparation'}</p>
+  <h2 class="sheet-title">${esc(r.name)}</h2>
+  <p class="muted">${fmt(r.date)} 2027${r.est ? ' (date estimée)' : ''} · ${esc(r.place)} · ${esc(r.dist)}${r.example ? ' · course d’exemple' : ''}</p>
+  <div class="kv"><div><span>Dans</span><b>${left} jours</b></div><div><span>Forme ${s.short.toLowerCase()} auj.</span><b>${s.score}</b></div><div><span>Prévue le jour J</span><b>${r.proj}</b></div></div>
+  <p class="note">En suivant les phases prévues, ta forme ${s.short.toLowerCase()} passe de ${s.score} à ${r.proj} : ${r.proj >= 85 ? 'tu arrives dans la zone « prêt ».' : 'un peu juste.'}</p>`;
+}
+
+/* Bande proportionnelle des phases jusqu’à une course, avec « Tu es ici ». */
+function phaseStrip(list) {
+  const a = list[0].from < TODAY ? list[0].from : list[0].from;
+  const z = list[list.length - 1].to;
+  const total = days(a, z) + 1;
+  const segs = list.map(p => {
+    const w = ((days(p.from, p.to) + 1) / total) * 100;
+    return `<i style="width:${w}%;background:${BLOCKS[p.b].color}" title="${esc(p.name)}"></i>`;
+  }).join('');
+  const here = Math.max(0, Math.min(100, (days(a, TODAY) / total) * 100));
+  return `<div class="strip"><div class="strip-bar">${segs}</div><span class="strip-here" style="left:${here}%"><em>auj.</em></span></div>
+  <div class="strip-ends"><span>${fmt(a)}</span><span>${fmt(z)}</span></div>`;
+}
+function phaseRows(list) {
+  return list.map(p => {
+    const cur = p.from <= TODAY && p.to >= TODAY;
+    const r = p.race ? race(p.race) : null;
+    return `<button class="ph-row${cur ? ' cur' : ''}" data-phase="${PHASES.indexOf(p)}">
+      <span class="ph-c" style="background:${BLOCKS[p.b].color}"></span>
+      <span class="ph-t"><b>${esc(p.name)}</b><small>${fmtRange(p.from, p.to)} · ${weeks(p.from, p.to)} sem${cur ? ' · en cours' : ''}</small></span>
+      ${p.aim ? `<span class="ph-aim">${esc(p.aim)}</span>` : ''}
+    </button>${r ? `<div class="ph-race" data-race="${r.id}"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><b>${esc(r.name)}</b><small>${fmt(r.date)}</small></div>` : ''}`;
+  }).join('');
+}
+function phaseSheet(i) {
+  const p = PHASES[i], bl = BLOCKS[p.b];
+  const cur = p.from <= TODAY && p.to >= TODAY;
+  const wk = cur ? Math.floor(days(p.from, TODAY) / 7) + 1 : 0;
+  return `<p class="eyebrow" style="color:${bl.color}">${bl.name}</p>
+  <h2 class="sheet-title">${esc(p.name)}</h2>
+  <p class="muted">${fmtRange(p.from, p.to)} · ${weeks(p.from, p.to)} semaine${weeks(p.from, p.to) > 1 ? 's' : ''}${cur ? ` · semaine ${wk} sur ${weeks(p.from, p.to)}` : ''}</p>
+  <p class="advice">${esc(p.tip)}</p>
+  ${p.aim ? `<p class="note">Objectif de forme : ${esc(p.aim)}</p>` : ''}`;
+}
+
+(function () {
+  const $ = id => document.getElementById(id);
+  let cur = 'ski', expanded = false;
+
+  $('dock').innerHTML = SPORT_ORDER.map(id => {
+    const s = SPORTS[id];
+    return `<button data-s="${id}" style="--c:${s.color}"><span class="sc">${s.score}</span>${s.short}<span class="bar"></span></button>`;
+  }).join('');
+
+  function gauge(s) {
+    const cx = 120, cy = 120, R = 96;
+    const pt = v => { const a = Math.PI * (1 - v / 100); return [cx + R * Math.cos(a), cy - R * Math.sin(a)]; };
+    const arc = (a, b) => { const [x1, y1] = pt(a), [x2, y2] = pt(b); return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`; };
+    return `<path d="${arc(0, 100)}" stroke="var(--card-2)" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <path d="${arc(85, 100)}" stroke="var(--ok-soft)" stroke-width="18" fill="none"/>
+      <path d="${arc(0.01, s.score)}" stroke="${s.color}" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <text x="${cx}" y="${cy - 12}" text-anchor="middle" class="gauge-n" fill="var(--ink)">${s.score}</text>
+      <text x="${pt(0)[0]}" y="${cy + 18}" text-anchor="middle" class="gauge-t">0</text>
+      <text x="${pt(85)[0] - 2}" y="${pt(85)[1] - 16}" text-anchor="middle" class="gauge-t">prêt</text>
+      <text x="${pt(100)[0]}" y="${cy + 18}" text-anchor="middle" class="gauge-t">100</text>`;
+  }
+
+  function draw() {
+    const s = SPORTS[cur], st = status(s.score);
+    document.querySelectorAll('#dock button').forEach(b => b.toggleAttribute('aria-current', b.dataset.s === cur));
+    document.querySelectorAll('#dock button[aria-current]').forEach(b => b.setAttribute('aria-current', 'page'));
+    $('eb').textContent = 'Dimanche 8 novembre';
+    $('h').textContent = s.name;
+    $('gauge').innerHTML = gauge(s);
+    $('gauge').setAttribute('aria-label', `Forme ${s.name} : ${s.score} sur 100`);
+    $('gsub').innerHTML = `<span class="pill ${st.c}">${st.t}</span><span>${s.delta > 0 ? '+' : ''}${s.delta} en 4 semaines</span>`;
+    $('lead').textContent = s.lead;
+    const shade = [1, .72, .48];
+    $('weights').innerHTML = s.parts.map((p, i) => `<span style="flex:${p.w};background:${s.color};opacity:${shade[i]}">${p.w} %</span>`).join('');
+    $('ing').innerHTML = s.parts.map((p, i) => `<div class="ing-row"><b>${p.k}</b><span class="ing-w">${p.w} %</span>
+      <span class="meter"><i style="width:${p.v}%;background:${s.color};opacity:${shade[i]}"></i></span>
+      <span class="ing-d"><span>Maintenant : ${p.now}</span><span>Ton meilleur : ${p.best}</span></span></div>`).join('');
+    const own = nextRace(cur);
+    const r = own || nextRace('trail');
+    const projVal = own ? r.proj : 90;
+    const projW = Math.min(30, Math.round(days(TODAY, r.date) / 7));
+    $('spark').innerHTML = sparkSVG(s.hist, s.color, { proj: projW, projVal, h: 130 });
+    const left = days(TODAY, r.date);
+    $('nr').innerHTML = `<span class="nr-j">J−${left}<small>${fmt(r.date)}</small></span>
+      <span class="nr-t"><small>${own ? 'Prochaine course ' + s.short.toLowerCase() : 'Pas de course sur route · course à pied la plus proche'}</small><b>${esc(r.name)}</b><small>Forme ${s.short.toLowerCase()} prévue : ${projVal} · ${status(projVal).t.toLowerCase()}</small></span>`;
+    $('nr').dataset.race = r.id;
+    const list = phasesUntil(r.id);
+    const shown = expanded ? list : list.slice(0, 3);
+    $('strip').innerHTML = phaseStrip(list);
+    $('phases').innerHTML = phaseRows(shown);
+    $('morebtn').hidden = list.length <= 3;
+    $('morebtn').textContent = expanded ? 'Réduire' : (list.length - 3 > 1 ? `Voir les ${list.length - 3} autres phases` : 'Voir la dernière phase') + ' jusqu’à la course';
+    $('compare').innerHTML = SPORT_ORDER.map(id => {
+      const x = SPORTS[id];
+      return `<button data-s="${id}"><span class="cb"><i style="height:${Math.max(4, x.score * .46)}px;background:${x.color}"></i></span><b>${x.score}</b>${x.short}</button>`;
+    }).join('');
+  }
+
+  $('dock').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; cur = b.dataset.s; expanded = false; draw(); document.querySelector('.phone').scrollIntoView({ block: 'start' }); });
+  $('compare').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; cur = b.dataset.s; expanded = false; draw(); document.querySelector('.phone').scrollIntoView({ block: 'start' }); });
+  $('morebtn').addEventListener('click', () => { expanded = !expanded; draw(); });
+  $('how').addEventListener('click', () => openSheet(sportSheet(cur)));
+  document.querySelector('.phone').addEventListener('click', e => {
+    const ph = e.target.closest('[data-phase]'); if (ph) return openSheet(phaseSheet(+ph.dataset.phase));
+    const rc = e.target.closest('[data-race]'); if (rc) return openSheet(raceSheet(rc.dataset.race));
+  });
+  draw();
+})();
+</script>

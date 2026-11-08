@@ -1,0 +1,165 @@
+<title>Cadence · Feuille de route</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/*SHARED_CSS*/
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; margin: 0 -16px; padding-inline: 16px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; height: 38px; padding: 0 14px; border-radius: 99px; background: var(--card); box-shadow: var(--shadow); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 7px; color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.verdict { display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center; }
+.ring { width: 112px; height: 112px; }
+.ring-n { font: 800 28px var(--font-d); fill: var(--ink); font-variant-numeric: tabular-nums; }
+.ring-s { font: 650 10.5px var(--font); fill: var(--ink-3); }
+.verdict h2 { font-size: 21px; }
+.verdict p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.road { position: relative; display: flex; flex-direction: column; padding-left: 34px; }
+.road::before { content: ""; position: absolute; left: 13px; top: 14px; bottom: 18px; width: 4px; border-radius: 4px; background: var(--card-2); }
+.road-fill { position: absolute; left: 13px; top: 14px; width: 4px; border-radius: 4px; background: var(--ink); }
+.stop { position: relative; padding: 10px 0 14px; display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; }
+.stop::before { content: ""; position: absolute; left: -27px; top: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--card); border: 3px solid var(--c, var(--ink-3)); }
+.stop.done::before { background: var(--ink); border-color: var(--ink); }
+.stop.here::before { width: 20px; height: 20px; left: -30px; top: 11px; background: var(--ink); border-color: var(--card); box-shadow: 0 0 0 3px var(--ink); }
+.stop-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.stop-top b { font-size: 15px; }
+.stop-top small, .stop small { color: var(--ink-2); font-size: 12.5px; }
+.stop .tag { align-self: flex-start; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #fff; }
+.stop-body { display: flex; flex-direction: column; gap: 8px; background: var(--card-2); border-radius: 16px; padding: 12px; margin-top: 6px; }
+.stop-body p { margin: 0; font-size: 13.5px; }
+.todo { display: flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer; }
+.todo input { width: 20px; height: 20px; accent-color: var(--ink); flex: none; }
+.todo small { color: var(--ink-2); margin-left: auto; white-space: nowrap; }
+.todo input:checked + span { text-decoration: line-through; color: var(--ink-3); }
+.finish { background: var(--accent); color: var(--accent-ink); border-radius: 18px; padding: 14px; margin-left: -34px; display: flex; gap: 12px; align-items: center; text-align: left; width: calc(100% + 34px); }
+.finish small { opacity: .7; font-size: 12.5px; display: block; }
+.finish b { font-size: 16px; }
+.finish .flag { width: 24px; height: 24px; }
+.lt { display: flex; flex-direction: column; }
+.lt-row { display: grid; grid-template-columns: 14px 1fr auto; gap: 12px; align-items: center; padding: 14px 4px; border-top: 1px solid var(--line); text-align: left; width: 100%; }
+.lt-row:first-child { border-top: 0; }
+.light { width: 14px; height: 14px; border-radius: 50%; }
+.light.ok { background: var(--ok); } .light.mid { background: var(--mid); } .light.low { background: var(--low); }
+.lt-row b { display: block; }
+.lt-row small { color: var(--ink-2); font-size: 12.5px; }
+.lt-n { font: 750 22px var(--font-d); font-variant-numeric: tabular-nums; }
+.lt-n small { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+.more-road { align-self: flex-start; }
+</style>
+
+<div class="top-note"><b>Maquette C · Feuille de route</b><span>Une route d'aujourd'hui à la course choisie. Une phrase pour dire où tu en es.</span></div>
+<div class="phone">
+  <section class="screen" id="v-route">
+    <div><p class="eyebrow">Ma route vers</p><h1 id="title"></h1></div>
+    <div class="chips" role="group" aria-label="Course" id="chips"></div>
+    <div class="card"><div class="verdict" id="verdict"></div></div>
+    <div class="card">
+      <div class="road" id="road"></div>
+      <button class="link more-road" id="more"></button>
+    </div>
+  </section>
+
+  <section class="screen" id="v-form" hidden>
+    <div><p class="eyebrow">Dimanche 8 novembre · reposé</p><h1>Ma forme</h1></div>
+    <div class="card">
+      <p class="muted" style="font-size:13.5px">Chaque sport est noté par rapport à toi-même : 100 est ton meilleur niveau dans ce sport. Vert à partir de 85.</p>
+      <div class="lt" id="lights"></div>
+    </div>
+    <div class="card" id="detail"></div>
+  </section>
+
+  <nav class="dock" aria-label="Navigation">
+    <button data-v="route" aria-current="page"><svg viewBox="0 0 24 24"><path d="M6 21c0-6 12-6 12-12V3"/><circle cx="6" cy="21" r="0.5"/><path d="M14 6l4-3 4 3"/></svg>Ma route</button>
+    <button data-v="form"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Ma forme</button>
+  </nav>
+</div>
+<p class="foot">Chiffres de forme calculés depuis tes activités Strava (juillet → 8 novembre 2026). Les références d'hiver et de trail, le trail de printemps et les dates 2027 non confirmées sont des exemples.</p>
+
+<script>
+//SHARED_JS
+(function () {
+  const $ = id => document.getElementById(id);
+  const order = RACES.filter(r => r.date > TODAY);
+  /* Forme attendue aujourd’hui sur le chemin prévu vers chaque course. */
+  const EXPECTED = { fb: 33, tj: 33, tr: 52, et: 30 };
+  let sel = order[0].id, far = false;
+
+  $('chips').innerHTML = order.map(r => `<button class="chip" data-r="${r.id}" aria-pressed="${r.id === sel}"><span class="dot" style="background:${SPORTS[r.sport].color}"></span>${esc(r.name.replace(/^La |^L’/, ''))}</button>`).join('');
+
+  function ring(pct) {
+    const R = 46, C = 2 * Math.PI * R;
+    return `<svg class="ring" viewBox="0 0 112 112" role="img" aria-label="Prêt à ${pct} %">
+      <circle cx="56" cy="56" r="${R}" stroke="var(--card-2)" stroke-width="12" fill="none"/>
+      <circle cx="56" cy="56" r="${R}" stroke="var(--ink)" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 56 56)"/>
+      <text x="56" y="60" text-anchor="middle" class="ring-n">${pct} %</text>
+      <text x="56" y="76" text-anchor="middle" class="ring-s">prêt</text></svg>`;
+  }
+
+  function draw() {
+    const r = race(sel), s = SPORTS[r.sport];
+    $('title').textContent = r.name;
+    document.querySelectorAll('#chips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.r === sel));
+    const pct = Math.min(100, Math.round((s.score / 85) * 100));
+    const exp = EXPECTED[sel], diff = s.score - exp;
+    const word = diff >= 2 ? 'En avance' : diff <= -5 ? 'En retard' : 'Dans les temps';
+    const left = days(TODAY, r.date);
+    $('verdict').innerHTML = ring(pct) + `<div><p class="eyebrow">J−${left} · ${s.short}</p><h2>${word}</h2>
+      <p>Forme ${s.short.toLowerCase()} ${s.score}. À ce stade du plan, il fallait ${exp}. Prévue le jour J : ${r.proj}.</p></div>`;
+
+    /* Route : aujourd’hui → phases → course. On montre au plus 4 étapes, sauf si « plus loin ». */
+    const list = phasesUntil(sel);
+    const shown = far ? list : list.slice(0, 4);
+    const cut = shown.length < list.length;
+    let html = '';
+    shown.forEach(p => {
+      const bl = BLOCKS[p.b];
+      const cur = p.from <= TODAY && p.to >= TODAY;
+      const done = p.to < TODAY;
+      const wk = cur ? Math.floor(days(p.from, TODAY) / 7) + 1 : 0;
+      html += `<div class="stop${cur ? ' here' : done ? ' done' : ''}" style="--c:${bl.color}">
+        <div class="stop-top"><b>${esc(p.name)}</b><small>${fmtRange(p.from, p.to)}</small></div>
+        <span class="tag" style="background:${bl.color}">${bl.short}${cur ? ` · semaine ${wk + (TODAY === p.from ? 0 : 1)}/${weeks(p.from, p.to)}` : ` · ${weeks(p.from, p.to)} sem.`}</span>
+        ${cur ? `<div class="stop-body"><p><b>Tu es ici.</b> ${esc(p.tip)}</p>
+          <p class="eyebrow" style="margin-top:4px">Cette semaine</p>
+          ${WEEK.map((w, i) => `<label class="todo"><input type="checkbox" id="t${i}"><span>${w.d} · ${esc(w.t)}</span><small>${esc(w.m)}</small></label>`).join('')}
+          ${p.aim ? `<p class="muted" style="font-size:12.5px">Fin de phase : ${esc(p.aim)}</p>` : ''}</div>`
+        : `<small>${esc(p.tip)}${p.aim ? ' · ' + esc(p.aim) : ''}</small>`}
+      </div>`;
+      if (p.race && p.race !== sel && (!cut || shown.indexOf(p) < shown.length)) {
+        const mid = race(p.race);
+        html += `<div class="stop" style="--c:var(--ink)" data-race="${mid.id}"><div class="stop-top"><b>${esc(mid.name)}</b><small>${fmt(mid.date)}</small></div><small>Course de préparation sur la route</small></div>`;
+      }
+    });
+    if (cut) html += `<div class="stop" style="--c:var(--ink-3)"><small>… ${list.length - shown.length} autre${list.length - shown.length > 1 ? 's' : ''} étape${list.length - shown.length > 1 ? 's' : ''}</small></div>`;
+    html += `<button class="finish" data-race="${r.id}"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span><small>${fmt(r.date)} · ${esc(r.dist)}</small><b>${esc(r.name)}</b></span></button>`;
+    $('road').innerHTML = html;
+    $('more').hidden = list.length <= 4;
+    $('more').textContent = far ? 'Montrer seulement les prochaines étapes' : `Voir toute la route (${list.length} étapes)`;
+  }
+
+  $('chips').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; sel = b.dataset.r; far = false; draw(); });
+  $('more').addEventListener('click', () => { far = !far; draw(); });
+
+  /* Ma forme : feux */
+  function lights(active) {
+    $('lights').innerHTML = SPORT_ORDER.map(id => {
+      const s = SPORTS[id], st = status(s.score);
+      return `<button class="lt-row" data-s="${id}" aria-pressed="${id === active}"><span class="light ${st.c}"></span>
+        <span><b>${s.name}</b><small>${st.t} · ${s.delta > 0 ? '+' : ''}${s.delta} en 4 sem.</small></span>
+        <span class="lt-n">${s.score}<small> /100</small></span></button>`;
+    }).join('');
+    $('detail').innerHTML = sportSheet(active) + `<div>${sparkSVG(SPORTS[active].hist, SPORTS[active].color, { h: 110 })}</div>`;
+  }
+  $('lights').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (b) lights(b.dataset.s); });
+  lights('ski');
+
+  document.querySelector('.dock').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('.dock button').forEach(x => (x === b ? x.setAttribute('aria-current', 'page') : x.removeAttribute('aria-current')));
+    $('v-route').hidden = b.dataset.v !== 'route';
+    $('v-form').hidden = b.dataset.v !== 'form';
+  });
+  document.querySelector('.phone').addEventListener('click', e => {
+    const rc = e.target.closest('[data-race]'); if (rc) openSheet(raceSheet(rc.dataset.race));
+  });
+  draw();
+})();
+</script>

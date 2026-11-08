@@ -18,11 +18,15 @@ import { initMetrics, renderMetrics, openMeasureSheet, openValueSheet } from './
 import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { initAnalysis, renderAnalysis, showPeaks } from './views/analysis.js';
 import { initCatalog, renderCatalog } from './views/catalog.js';
+import { initToday, renderToday } from './views/today.js';
+import { initStats, renderStats } from './views/stats.js';
 import { initPlanner, openPlanner, refreshPlanner } from './views/planner.js';
 import { clearActivities } from './core/activities.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
+  todayView: { title: 'Aujourd’hui', show: renderToday, slices: ['objectives', 'races'] },
+  statsView: { title: 'Stats', show: renderStats, slices: ['objectives'] },
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
   catalogView: { title: 'Courses', show: renderCatalog, slices: ['objectives', 'races'] },
   metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] },
@@ -33,7 +37,7 @@ const VIEW_KEY = 'allure_last_view';
 const SYNCED_KEY = 'allure_synced_once';
 // Dernier compte connecté sur cet appareil (changement de compte : données locales vidées).
 const LAST_UID = 'allure_last_uid';
-let currentView = 'zoomView';
+let currentView = 'todayView';
 
 /* Affichage d'une vue : une erreur d'affichage ne doit jamais bloquer la synchronisation ni l'import. */
 function show(id) {
@@ -46,7 +50,7 @@ function show(id) {
 }
 
 function switchView(id, { scroll = true } = {}) {
-  if (!VIEWS[id]) id = 'zoomView';
+  if (!VIEWS[id]) id = 'todayView';
   currentView = id;
   $$('.view').forEach(v => (v.hidden = v.id !== id));
   $$('[data-view]').forEach(b => {
@@ -234,6 +238,13 @@ function init() {
       switchView('analysisView');
     }
   });
+  initToday({
+    openDay: key => showDay(key),
+    openView: id => switchView(id),
+    openPlanner: () => openPlanner()
+  });
+  initStats({ openView: id => switchView(id) });
+  document.addEventListener('cadence:activities', () => ['todayView', 'statsView'].includes(currentView) && show(currentView));
   initCatalog({
     openDay: key => {
       switchView('zoomView');
@@ -252,7 +263,7 @@ function init() {
   subscribe(onStateChange);
 
   $$('[data-view]').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
-  switchView(readText(VIEW_KEY, 'zoomView'), { scroll: false });
+  switchView('todayView', { scroll: false }); // toujours Aujourd'hui à l'ouverture
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
