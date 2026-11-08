@@ -1,0 +1,143 @@
+<title>Cadence · Par sport</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/*SHARED_CSS*/
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.gauge-card { align-items: center; text-align: center; gap: 6px; }
+.gauge { width: 100%; max-width: 270px; height: auto; display: block; }
+.gauge-n { font: 800 58px/1 var(--font-d); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.gauge-t { fill: var(--ink-3); font: 650 11px var(--font); }
+.gauge-sub { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.lead { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 34ch; }
+.ing { display: flex; flex-direction: column; gap: 14px; }
+.ing-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: baseline; }
+.ing-row .meter { grid-column: 1 / -1; height: 10px; }
+.ing-w { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--card-2); border-radius: 6px; padding: 2px 7px; }
+.ing-d { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.weights { display: flex; height: 26px; border-radius: 10px; overflow: hidden; gap: 2px; }
+.weights span { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+.nr { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; }
+.nr-j { background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 8px 10px; text-align: center; font: 800 20px/1 var(--font-d); font-variant-numeric: tabular-nums; flex: none; }
+.nr-j small { display: block; font-size: 10.5px; font-weight: 650; opacity: .7; margin-top: 3px; }
+.nr-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.nr-t small { color: var(--ink-2); font-size: 12.5px; }
+.dock.sports button { gap: 4px; }
+.dock.sports .sc { font: 800 16px/1 var(--font-d); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.dock.sports button[aria-current="page"] .sc { color: var(--c); }
+.dock.sports .bar { width: 22px; height: 3px; border-radius: 3px; background: var(--c); opacity: .35; }
+.dock.sports button[aria-current="page"] .bar { opacity: 1; }
+.compare { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.compare button { background: var(--card-2); border-radius: 14px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 650; color: var(--ink-2); }
+.compare .cb { width: 100%; height: 46px; display: flex; align-items: flex-end; justify-content: center; }
+.compare .cb i { width: 18px; border-radius: 5px 5px 2px 2px; display: block; }
+.compare b { font: 750 15px var(--font-d); color: var(--ink); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="top-note"><b>Maquette B · Par sport</b><span>Chaque sport a sa page, sa recette et sa course. La barre du bas, ce sont tes sports.</span></div>
+<div class="phone">
+  <section class="screen" id="v">
+    <div class="head">
+      <div><p class="eyebrow" id="eb"></p><h1 id="h"></h1></div>
+      <span class="pill ok" title="Fraîcheur des 7 derniers jours">Reposé</span>
+    </div>
+    <div class="card gauge-card">
+      <svg class="gauge" viewBox="0 0 240 140" id="gauge" role="img"></svg>
+      <div class="gauge-sub" id="gsub"></div>
+      <p class="lead" id="lead"></p>
+    </div>
+    <div class="card">
+      <div class="row between"><h2>Ce qui fait ta forme</h2><button class="link" id="how">Comment ?</button></div>
+      <div class="weights" id="weights" aria-label="Poids de chaque élément"></div>
+      <div class="ing" id="ing"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><h2>Évolution</h2><span class="muted" style="font-size:12.5px">par semaine · pointillé : prévu</span></div>
+      <div id="spark"></div>
+    </div>
+    <div class="card">
+      <button class="nr" id="nr"></button>
+      <div id="strip"></div>
+      <div id="phases"></div>
+      <button class="btn" id="morebtn"></button>
+    </div>
+    <div class="card">
+      <h2>Tes sports côte à côte</h2>
+      <div class="compare" id="compare"></div>
+      <p class="muted" style="font-size:12.5px">Chaque barre est mesurée par rapport à ton propre meilleur niveau dans ce sport.</p>
+    </div>
+  </section>
+  <nav class="dock sports" aria-label="Sports" id="dock"></nav>
+</div>
+<p class="foot">Chiffres de forme calculés depuis tes activités Strava (juillet → 8 novembre 2026). Les références d'hiver et de trail, le trail de printemps et les dates 2027 non confirmées sont des exemples.</p>
+
+<script>
+//SHARED_JS
+(function () {
+  const $ = id => document.getElementById(id);
+  let cur = 'ski', expanded = false;
+
+  $('dock').innerHTML = SPORT_ORDER.map(id => {
+    const s = SPORTS[id];
+    return `<button data-s="${id}" style="--c:${s.color}"><span class="sc">${s.score}</span>${s.short}<span class="bar"></span></button>`;
+  }).join('');
+
+  function gauge(s) {
+    const cx = 120, cy = 120, R = 96;
+    const pt = v => { const a = Math.PI * (1 - v / 100); return [cx + R * Math.cos(a), cy - R * Math.sin(a)]; };
+    const arc = (a, b) => { const [x1, y1] = pt(a), [x2, y2] = pt(b); return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`; };
+    return `<path d="${arc(0, 100)}" stroke="var(--card-2)" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <path d="${arc(85, 100)}" stroke="var(--ok-soft)" stroke-width="18" fill="none"/>
+      <path d="${arc(0.01, s.score)}" stroke="${s.color}" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <text x="${cx}" y="${cy - 12}" text-anchor="middle" class="gauge-n" fill="var(--ink)">${s.score}</text>
+      <text x="${pt(0)[0]}" y="${cy + 18}" text-anchor="middle" class="gauge-t">0</text>
+      <text x="${pt(85)[0] - 2}" y="${pt(85)[1] - 16}" text-anchor="middle" class="gauge-t">prêt</text>
+      <text x="${pt(100)[0]}" y="${cy + 18}" text-anchor="middle" class="gauge-t">100</text>`;
+  }
+
+  function draw() {
+    const s = SPORTS[cur], st = status(s.score);
+    document.querySelectorAll('#dock button').forEach(b => b.toggleAttribute('aria-current', b.dataset.s === cur));
+    document.querySelectorAll('#dock button[aria-current]').forEach(b => b.setAttribute('aria-current', 'page'));
+    $('eb').textContent = 'Dimanche 8 novembre';
+    $('h').textContent = s.name;
+    $('gauge').innerHTML = gauge(s);
+    $('gauge').setAttribute('aria-label', `Forme ${s.name} : ${s.score} sur 100`);
+    $('gsub').innerHTML = `<span class="pill ${st.c}">${st.t}</span><span>${s.delta > 0 ? '+' : ''}${s.delta} en 4 semaines</span>`;
+    $('lead').textContent = s.lead;
+    const shade = [1, .72, .48];
+    $('weights').innerHTML = s.parts.map((p, i) => `<span style="flex:${p.w};background:${s.color};opacity:${shade[i]}">${p.w} %</span>`).join('');
+    $('ing').innerHTML = s.parts.map((p, i) => `<div class="ing-row"><b>${p.k}</b><span class="ing-w">${p.w} %</span>
+      <span class="meter"><i style="width:${p.v}%;background:${s.color};opacity:${shade[i]}"></i></span>
+      <span class="ing-d"><span>Maintenant : ${p.now}</span><span>Ton meilleur : ${p.best}</span></span></div>`).join('');
+    const own = nextRace(cur);
+    const r = own || nextRace('trail');
+    const projVal = own ? r.proj : 90;
+    const projW = Math.min(30, Math.round(days(TODAY, r.date) / 7));
+    $('spark').innerHTML = sparkSVG(s.hist, s.color, { proj: projW, projVal, h: 130 });
+    const left = days(TODAY, r.date);
+    $('nr').innerHTML = `<span class="nr-j">J−${left}<small>${fmt(r.date)}</small></span>
+      <span class="nr-t"><small>${own ? 'Prochaine course ' + s.short.toLowerCase() : 'Pas de course sur route · course à pied la plus proche'}</small><b>${esc(r.name)}</b><small>Forme ${s.short.toLowerCase()} prévue : ${projVal} · ${status(projVal).t.toLowerCase()}</small></span>`;
+    $('nr').dataset.race = r.id;
+    const list = phasesUntil(r.id);
+    const shown = expanded ? list : list.slice(0, 3);
+    $('strip').innerHTML = phaseStrip(list);
+    $('phases').innerHTML = phaseRows(shown);
+    $('morebtn').hidden = list.length <= 3;
+    $('morebtn').textContent = expanded ? 'Réduire' : (list.length - 3 > 1 ? `Voir les ${list.length - 3} autres phases` : 'Voir la dernière phase') + ' jusqu’à la course';
+    $('compare').innerHTML = SPORT_ORDER.map(id => {
+      const x = SPORTS[id];
+      return `<button data-s="${id}"><span class="cb"><i style="height:${Math.max(4, x.score * .46)}px;background:${x.color}"></i></span><b>${x.score}</b>${x.short}</button>`;
+    }).join('');
+  }
+
+  $('dock').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; cur = b.dataset.s; expanded = false; draw(); document.querySelector('.phone').scrollIntoView({ block: 'start' }); });
+  $('compare').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; cur = b.dataset.s; expanded = false; draw(); document.querySelector('.phone').scrollIntoView({ block: 'start' }); });
+  $('morebtn').addEventListener('click', () => { expanded = !expanded; draw(); });
+  $('how').addEventListener('click', () => openSheet(sportSheet(cur)));
+  document.querySelector('.phone').addEventListener('click', e => {
+    const ph = e.target.closest('[data-phase]'); if (ph) return openSheet(phaseSheet(+ph.dataset.phase));
+    const rc = e.target.closest('[data-race]'); if (rc) return openSheet(raceSheet(rc.dataset.race));
+  });
+  draw();
+})();
+</script>
