@@ -30,7 +30,7 @@ let period = PERIODS.some(p => p.id === readText(PERIOD_KEY, '')) ? readText(PER
 let offset = 0;
 const MODE_KEY = 'allure_analysis_mode';
 const SPORT_KEY = 'allure_analysis_sport';
-const MODES = ['bilan', 'pics', 'plan'];
+const MODES = ['bilan', 'plan']; // « Pics » remplacé par la forme par sport (Aujourd'hui)
 let mode = MODES.includes(readText(MODE_KEY, 'bilan')) ? readText(MODE_KEY, 'bilan') : 'bilan';
 let sport = readText(SPORT_KEY, 'all');
 let memo = { list: null, settings: '', series: null };
