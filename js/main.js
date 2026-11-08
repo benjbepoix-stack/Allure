@@ -19,12 +19,14 @@ import { initZoom, renderZoom, zoomContextDay, showDay } from './views/zoom.js';
 import { initAnalysis, renderAnalysis, showPeaks } from './views/analysis.js';
 import { initCatalog, renderCatalog } from './views/catalog.js';
 import { initToday, renderToday } from './views/today.js';
+import { initStats, renderStats } from './views/stats.js';
 import { initPlanner, openPlanner, refreshPlanner } from './views/planner.js';
 import { clearActivities } from './core/activities.js';
 import { state } from './core/store.js';
 
 const VIEWS = {
   todayView: { title: 'Aujourd’hui', show: renderToday, slices: ['objectives', 'races'] },
+  statsView: { title: 'Stats', show: renderStats, slices: ['objectives'] },
   zoomView: { title: 'Saison', show: renderZoom, slices: ['objectives', 'races', 'bodyMetrics'] },
   catalogView: { title: 'Courses', show: renderCatalog, slices: ['objectives', 'races'] },
   metricsView: { title: 'Suivi', show: renderMetrics, slices: ['bodyMetrics'] },
@@ -241,6 +243,8 @@ function init() {
     openView: id => switchView(id),
     openPlanner: () => openPlanner()
   });
+  initStats({ openView: id => switchView(id) });
+  document.addEventListener('cadence:activities', () => ['todayView', 'statsView'].includes(currentView) && show(currentView));
   initCatalog({
     openDay: key => {
       switchView('zoomView');

@@ -610,6 +610,7 @@ export function initAnalysis() {
     onChange: () => {
       memo = { list: null };
       renderAnalysis();
+      document.dispatchEvent(new CustomEvent('cadence:activities')); // Aujourd'hui et Stats se mettent à jour
     },
     onImportFile: () => $('#analysisFile').click()
   });

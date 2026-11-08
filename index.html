@@ -43,6 +43,7 @@
   <link rel="stylesheet" href="css/allure.css">
   <link rel="stylesheet" href="css/vivant.css">
   <link rel="stylesheet" href="css/views/today.css">
+  <link rel="stylesheet" href="css/views/stats.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
@@ -90,6 +91,11 @@
     <!-- ================= AUJOURD'HUI : prochaine course, forme par sport, phases jusqu'à la course, semaine ================= -->
     <section id="todayView" class="view" hidden aria-labelledby="headerTitle">
       <div class="td-body" id="todayBody" aria-live="polite"></div>
+    </section>
+
+    <!-- ================= STATS : chiffres clés, volume et forme, par sport ================= -->
+    <section id="statsView" class="view" hidden aria-labelledby="headerTitle">
+      <div class="st-body" id="statsBody" aria-live="polite"></div>
     </section>
 
     <!-- ================= ZOOM : année, mois, semaine, jour ================= -->
@@ -195,12 +201,13 @@
 
   </main>
 
-  <!-- Barre du bas : Aujourd'hui / Saison / Courses, et Ajouter (Suivi et Analyse : liens en bas d'Aujourd'hui) -->
+  <!-- Barre du bas : Aujourd'hui / Saison / Courses / Stats, et Ajouter (Suivi : lien en bas d'Aujourd'hui ; Analyse détaillée : lien en bas de Stats) -->
   <nav class="dock" aria-label="Navigation principale">
     <div class="dock__tabs">
       <button type="button" class="dock__tab is-active" data-view="todayView" aria-current="page"><span data-icon="sun" data-size="18"></span><span>Aujourd’hui</span></button>
       <button type="button" class="dock__tab" data-view="zoomView"><span data-icon="calendar" data-size="18"></span><span>Saison</span></button>
       <button type="button" class="dock__tab" data-view="catalogView"><span data-icon="flag" data-size="18"></span><span>Courses</span></button>
+      <button type="button" class="dock__tab" data-view="statsView"><span data-icon="chart" data-size="18"></span><span>Stats</span></button>
     </div>
     <button type="button" class="btn btn--primary dock__add" id="addBtn"><span data-icon="plus" data-size="20"></span><span>Ajouter</span></button>
   </nav>

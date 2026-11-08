@@ -182,7 +182,6 @@ function weekHTML() {
 function moreHTML() {
   return `<section class="td-links">
     <button type="button" class="td-link" data-td="view" data-view="metricsView">${icon('body', 18)}<span><b>Suivi</b><small>Poids, FTP, mensurations</small></span>${icon('chevronRight', 16)}</button>
-    <button type="button" class="td-link" data-td="view" data-view="analysisView">${icon('chart', 18)}<span><b>Analyse</b><small>Strava, bilan détaillé, plan</small></span>${icon('chevronRight', 16)}</button>
   </section>`;
 }
 

@@ -157,11 +157,25 @@ export function formBySport(today = todayKey()) {
     if (ref.speed === 0) ref.speed = null;
     const now = scoreOf(g, measure(g, acts, today, s), ref);
     const before = scoreOf(g, measure(g, acts, dateKey(addDays(fromKey(today), -28)), s), ref);
-    out.push({ ...g, score: now.score, delta: now.score - before.score, parts: now.parts, refDate });
+    out.push({ ...g, score: now.score, delta: now.score - before.score, parts: now.parts, refDate, ref });
   }
   const value = out;
   memo = { key, value };
   return value;
+}
+
+/** Forme d'un groupe semaine par semaine (dimanche de chaque semaine), sur `weeks` semaines, avec les références d'aujourd'hui. */
+export function formHistory(id, weeks = 26, today = todayKey()) {
+  const f = formBySport(today).find(x => x.id === id);
+  if (!f) return [];
+  const acts = getActivities();
+  const s = analysisSettings();
+  const out = [];
+  for (let k = weeks - 1; k >= 0; k--) {
+    const end = dateKey(addDays(fromKey(today), -7 * k));
+    out.push({ key: end, score: scoreOf(f, measure(f, acts, end, s), f.ref).score });
+  }
+  return out;
 }
 
 export const formStatus = score => (score >= READY ? { id: 'ok', name: 'Prêt' } : score >= 50 ? { id: 'mid', name: 'En route' } : { id: 'low', name: 'En construction' });
