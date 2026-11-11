@@ -96,6 +96,9 @@
 .td-score { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .td-score strong { font-size: 40px; font-weight: 850; letter-spacing: -.035em; line-height: 1; font-variant-numeric: tabular-nums; }
 .td-score strong small { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--text-3); }
+.td-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
+.td-kind { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2, rgba(127,127,127,.08)); }
+.td-kind b { font-size: 22px; font-variant-numeric: tabular-nums; }
 .td-weights { display: flex; gap: 2px; height: 24px; border-radius: 10px; overflow: hidden; }
 .td-weights span { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 750; white-space: nowrap; overflow: hidden; }
 .td-recipe { display: flex; flex-direction: column; gap: 14px; }

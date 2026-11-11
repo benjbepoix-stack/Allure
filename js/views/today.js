@@ -13,7 +13,7 @@ import { displayPhases } from '../core/phase-level.js';
 import { racePriority } from '../core/planner.js';
 import { getActivities } from '../core/activities.js';
 import { family, familyOf } from '../core/training.js';
-import { READY, formBySport, formStatus, freshness, group, raceGroup, valueLabel } from '../core/form.js';
+import { KINDS, READY, formBySport, formStatus, freshness, group, raceGroup, valueLabel } from '../core/form.js';
 import { isUpcoming, sortedRaces, fmtDist } from './races.js';
 import { openSheet } from '../ui/dialog.js';
 import { icon } from '../ui/icons.js';
@@ -186,6 +186,7 @@ function moreHTML() {
 }
 
 /* ---------- Fiche d'un sport ---------- */
+const OPAC = [1, 0.8, 0.62, 0.46, 0.34];
 function sportSheet(id) {
   const f = formBySport().find(x => x.id === id);
   if (!f) return;
@@ -196,17 +197,18 @@ function sportSheet(id) {
     <div class="td-score"><strong>${f.score}<small> / 100</small></strong><span class="td-pill td-pill--${st.id}">${st.name}</span>
       <span class="td-muted td-small">${f.delta > 0 ? '+' : ''}${f.delta} en 4 semaines</span></div>
     <p class="td-muted">${esc(f.lead)}</p>
-    <div class="td-weights">${f.parts.map((p, i) => `<span style="flex:${p.w};background:${f.color};opacity:${[1, 0.75, 0.55, 0.4][i]}">${p.w} %</span>`).join('')}</div>
+    <div class="td-kinds">${['speed', 'endu'].map(k => `<span class="td-kind"><span class="td-muted td-small">${KINDS[k]}</span><b>${f[k] ?? '—'}</b></span>`).join('')}</div>
+    <div class="td-weights">${f.parts.map((p, i) => `<span style="flex:${p.w};background:${f.color};opacity:${OPAC[i]}">${p.w} %</span>`).join('')}</div>
     <div class="td-recipe">${f.parts
       .map(
         (p, i) => `<div class="td-recipe__row">
-        <div class="td-recipe__top"><b>${esc(p.name)}</b><span class="td-muted">${p.v == null ? 'pas de donnée' : `${p.v} / 100`} · compte pour ${p.w} %</span></div>
-        <span class="td-meter"><i style="width:${p.v || 0}%;background:${f.color};opacity:${[1, 0.75, 0.55, 0.4][i]}"></i></span>
+        <div class="td-recipe__top"><b>${esc(p.name)} <small class="td-muted">${KINDS[p.kind].toLowerCase()}</small></b><span class="td-muted">${p.v == null ? 'pas de donnée' : `${p.v} / 100`} · compte pour ${p.w} %</span></div>
+        <span class="td-meter"><i style="width:${p.v || 0}%;background:${f.color};opacity:${OPAC[i]}"></i></span>
         <div class="td-recipe__bot"><span>Maintenant : ${valueLabel(p.id, p.now)}</span><span>Ton meilleur : ${valueLabel(p.id, p.best)}</span></div>
       </div>`
       )
       .join('')}</div>
-    <p class="td-note">100 = ton meilleur niveau dans ce sport sur les 2 dernières années${refMonth ? ` (le plus récent : ${formatKey(refMonth, { month: 'long', year: 'numeric' })})` : ''}. Chaque sport a sa propre échelle : 60 en course & trail veut dire « 60 % de toi au mieux », pas un chiffre absolu.</p>`;
+    <p class="td-note">Vitesse : 100 = ton meilleur sur les 2 dernières années${refMonth ? ` (le plus récent : ${formatKey(refMonth, { month: 'long', year: 'numeric' })})` : ''}. Endurance : 100 = ton haut niveau habituel, pas ta plus grosse semaine.${f.parts.some(p => p.id === 'ftp' && p.now == null) ? ' Ajoute un test FTP récent (Suivi) pour que ta FTP compte.' : ''} Chaque sport a sa propre échelle : 60 en course & trail veut dire « 60 % de toi au mieux », pas un chiffre absolu.</p>`;
   openSheet('formSheet', { focus: false });
 }
 
